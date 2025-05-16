@@ -32,5 +32,5 @@ jobs:
           name: app-release.apk
           path: app/build/outputs/apk/release/app-release.apk
 
-      - name: List APKs
-        run: find . -name "app-release.apk"
+      - name: List all APKs
+        run: find . -type f -name "*.apk"
