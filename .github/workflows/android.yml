@@ -14,23 +14,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease
+      - name: Grant gradlew permission
+        run: chmod +x ./gradlew
 
-      - name: Upload APK
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Find all APKs
+        run: find . -type f -name "*.apk"
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: List all APKs
-        run: find . -type f -name "*.apk"
+          name: app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
