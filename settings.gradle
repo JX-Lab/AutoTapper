@@ -1,0 +1,3 @@
+// 设置项目包含哪些模块
+rootProject.name = "AutoTapper"
+include ':app'
