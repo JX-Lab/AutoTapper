@@ -1,0 +1,23 @@
+<!--
+ overlay_layout.xml
+ 简单的悬浮窗布局，显示一个按钮，点击后记录坐标并关闭悬浮窗。
+-->
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="#88000000">
+
+    <Button
+        android:id="@+id/btn_record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="点击屏幕记录坐标"
+        android:textSize="14sp"
+        android:background="@android:color/holo_blue_light"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

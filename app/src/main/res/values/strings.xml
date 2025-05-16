@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">连点器</string>
+    <string name="start_clicking">开始点击</string>
+    <string name="stop_clicking">停止点击</string>
+    <string name="set_point">设置坐标</string>
+    <string name="click_point_set">点击位置已设置</string>
+    <string name="permission_required">需要权限，请授予！</string>
+</resources>
