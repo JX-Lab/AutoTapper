@@ -27,59 +27,6 @@ class AutoClickService : AccessibilityService() {
     private var randomExtraMs = 80L
     private var repeatCount = 0
 
-    private val clickRunnable = object : Runnable {
-        override fun run() {
-            if (!isClicking) {
-                return
-            }
-
-            if (repeatCount > 0 && completedClicks >= repeatCount) {
-                stopClicking(showToast = true, message = getString(R.string.click_completed, completedClicks))
-                return
-            }
-
-            val gesture = GestureDescription.Builder()
-                .addStroke(
-                    GestureDescription.StrokeDescription(
-                        Path().apply { moveTo(tapX.toFloat(), tapY.toFloat()) },
-                        0,
-                        40
-                    )
-                )
-                .build()
-
-            val dispatched = dispatchGesture(
-                gesture,
-                object : GestureResultCallback() {
-                    override fun onCompleted(gestureDescription: GestureDescription?) {
-                        super.onCompleted(gestureDescription)
-                        completedClicks++
-                        if (!isClicking) {
-                            return
-                        }
-
-                        val randomDelay = if (randomExtraMs > 0) {
-                            Random.nextLong(randomExtraMs + 1)
-                        } else {
-                            0L
-                        }
-                        handler.postDelayed(clickRunnable, intervalMs + randomDelay)
-                    }
-
-                    override fun onCancelled(gestureDescription: GestureDescription?) {
-                        super.onCancelled(gestureDescription)
-                        stopClicking(showToast = true, message = getString(R.string.click_cancelled))
-                    }
-                },
-                null
-            )
-
-            if (!dispatched) {
-                stopClicking(showToast = true, message = getString(R.string.click_dispatch_failed))
-            }
-        }
-    }
-
     private val controlReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -96,6 +43,7 @@ class AutoClickService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         registerControlReceiver()
+        broadcastClickState(false)
         Toast.makeText(this, R.string.accessibility_ready, Toast.LENGTH_SHORT).show()
     }
 
@@ -109,6 +57,57 @@ class AutoClickService : AccessibilityService() {
         stopClicking(showToast = false, message = null)
         unregisterControlReceiver()
         super.onDestroy()
+    }
+
+    private fun performClick() {
+        if (!isClicking) {
+            return
+        }
+
+        if (repeatCount > 0 && completedClicks >= repeatCount) {
+            stopClicking(showToast = true, message = getString(R.string.click_completed, completedClicks))
+            return
+        }
+
+        val gesture: GestureDescription = GestureDescription.Builder()
+            .addStroke(
+                GestureDescription.StrokeDescription(
+                    Path().apply { moveTo(tapX.toFloat(), tapY.toFloat()) },
+                    0,
+                    40
+                )
+            )
+            .build()
+
+        val dispatched: Boolean = dispatchGesture(
+            gesture,
+            object : GestureResultCallback() {
+                override fun onCompleted(gestureDescription: GestureDescription?) {
+                    super.onCompleted(gestureDescription)
+                    completedClicks++
+                    if (!isClicking) {
+                        return
+                    }
+
+                    val randomDelay: Long = if (randomExtraMs > 0) {
+                        Random.nextLong(randomExtraMs + 1)
+                    } else {
+                        0L
+                    }
+                    scheduleNextClick(intervalMs + randomDelay)
+                }
+
+                override fun onCancelled(gestureDescription: GestureDescription?) {
+                    super.onCancelled(gestureDescription)
+                    stopClicking(showToast = true, message = getString(R.string.click_cancelled))
+                }
+            },
+            null
+        )
+
+        if (!dispatched) {
+            stopClicking(showToast = true, message = getString(R.string.click_dispatch_failed))
+        }
     }
 
     private fun startClicking() {
@@ -126,20 +125,38 @@ class AutoClickService : AccessibilityService() {
 
         completedClicks = 0
         isClicking = true
-        handler.removeCallbacks(clickRunnable)
-        handler.post(clickRunnable)
+        broadcastClickState(true)
+        clearPendingClicks()
+        performClick()
         Toast.makeText(this, R.string.click_started, Toast.LENGTH_SHORT).show()
     }
 
     private fun stopClicking(showToast: Boolean, message: String?) {
         val wasClicking = isClicking
         isClicking = false
-        handler.removeCallbacks(clickRunnable)
+        clearPendingClicks()
+        broadcastClickState(false)
 
         if (showToast && (wasClicking || !message.isNullOrBlank())) {
             Toast.makeText(this, message ?: getString(R.string.click_stopped), Toast.LENGTH_SHORT)
                 .show()
         }
+    }
+
+    private fun scheduleNextClick(delayMs: Long) {
+        handler.postDelayed({ performClick() }, delayMs)
+    }
+
+    private fun clearPendingClicks() {
+        handler.removeCallbacksAndMessages(null)
+    }
+
+    private fun broadcastClickState(isRunning: Boolean) {
+        sendBroadcast(
+            Intent(AutoTapperConfig.ACTION_CLICK_STATE_CHANGED)
+                .setPackage(packageName)
+                .putExtra(AutoTapperConfig.EXTRA_IS_CLICKING, isRunning)
+        )
     }
 
     private fun registerControlReceiver() {

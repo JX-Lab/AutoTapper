@@ -11,16 +11,21 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var tvPermissionState: TextView
     private lateinit var tvSelectedPoint: TextView
+    private lateinit var tvConfigSummary: TextView
     private lateinit var etIntervalMs: EditText
     private lateinit var etRandomExtraMs: EditText
     private lateinit var etRepeatCount: EditText
 
     private var pointReceiverRegistered = false
+    private var selectedX = -1
+    private var selectedY = -1
 
     private val pointReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -31,11 +36,16 @@ class MainActivity : AppCompatActivity() {
             val x = intent.getIntExtra(AutoTapperConfig.EXTRA_TAP_X, -1)
             val y = intent.getIntExtra(AutoTapperConfig.EXTRA_TAP_Y, -1)
             updateSelectedPoint(x, y)
-            Toast.makeText(
-                this@MainActivity,
-                getString(R.string.point_selected_toast, x, y),
-                Toast.LENGTH_SHORT
-            ).show()
+            if (x >= 0 && y >= 0) {
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.point_selected_toast, x, y),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(this@MainActivity, R.string.point_cleared_toast, Toast.LENGTH_SHORT)
+                    .show()
+            }
         }
     }
 
@@ -45,6 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         tvPermissionState = findViewById(R.id.tv_permission_state)
         tvSelectedPoint = findViewById(R.id.tv_selected_point)
+        tvConfigSummary = findViewById(R.id.tv_config_summary)
         etIntervalMs = findViewById(R.id.et_interval_ms)
         etRandomExtraMs = findViewById(R.id.et_random_extra_ms)
         etRepeatCount = findViewById(R.id.et_repeat_count)
@@ -56,7 +67,10 @@ class MainActivity : AppCompatActivity() {
             PermissionUtils.requestAccessibilityPermission(this)
         }
         findViewById<Button>(R.id.btn_pick_point).setOnClickListener {
-            startPointSelection()
+            openFloatingController()
+        }
+        findViewById<Button>(R.id.btn_close_controller).setOnClickListener {
+            closeFloatingController()
         }
         findViewById<Button>(R.id.btn_start).setOnClickListener {
             startAutoTap()
@@ -67,6 +81,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_refresh_status).setOnClickListener {
             updateStatus()
         }
+
+        etIntervalMs.doAfterTextChanged { updateConfigSummary() }
+        etRandomExtraMs.doAfterTextChanged { updateConfigSummary() }
+        etRepeatCount.doAfterTextChanged { updateConfigSummary() }
 
         loadSavedConfig()
         updateStatus()
@@ -121,22 +139,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateSelectedPoint(x: Int, y: Int) {
+        selectedX = x
+        selectedY = y
         tvSelectedPoint.text = if (x >= 0 && y >= 0) {
             getString(R.string.selected_point_template, x, y)
         } else {
             getString(R.string.point_not_selected)
         }
+        updateConfigSummary()
     }
 
-    private fun startPointSelection() {
+    private fun openFloatingController() {
         if (!PermissionUtils.isOverlayPermissionGranted(this)) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_SHORT).show()
             PermissionUtils.requestOverlayPermission(this)
             return
         }
 
-        startService(Intent(this, OverlayService::class.java))
-        Toast.makeText(this, R.string.overlay_started, Toast.LENGTH_SHORT).show()
+        val prefs = AutoTapperConfig.prefs(this)
+        val hasSavedPoint =
+            prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1) >= 0 &&
+                prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1) >= 0
+
+        val intent = Intent(this, OverlayService::class.java).apply {
+            action = AutoTapperConfig.ACTION_SHOW_CONTROLLER
+            putExtra(AutoTapperConfig.EXTRA_START_PICKING, !hasSavedPoint)
+        }
+        ContextCompat.startForegroundService(this, intent)
+        Toast.makeText(
+            this,
+            if (hasSavedPoint) R.string.overlay_started else R.string.overlay_started_pick,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun closeFloatingController() {
+        stopService(Intent(this, OverlayService::class.java))
+        Toast.makeText(this, R.string.overlay_closed, Toast.LENGTH_SHORT).show()
     }
 
     private fun startAutoTap() {
@@ -177,6 +216,47 @@ class MainActivity : AppCompatActivity() {
     private fun stopAutoTap() {
         sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
         Toast.makeText(this, R.string.stop_command_sent, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateConfigSummary() {
+        val intervalInput = etIntervalMs.text.toString().toLongOrNull()
+        val randomExtraInput = etRandomExtraMs.text.toString().toLongOrNull()
+        val repeatCountInput = etRepeatCount.text.toString().toIntOrNull()
+
+        if (intervalInput == null || randomExtraInput == null || repeatCountInput == null) {
+            tvConfigSummary.text = getString(R.string.config_summary_invalid)
+            return
+        }
+
+        val intervalMs = intervalInput.coerceAtLeast(100L)
+        val randomExtraMs = randomExtraInput.coerceAtLeast(0L)
+        val repeatCount = repeatCountInput.coerceAtLeast(0)
+
+        val pointSummary = if (selectedX >= 0 && selectedY >= 0) {
+            getString(R.string.config_summary_point_selected, selectedX, selectedY)
+        } else {
+            getString(R.string.config_summary_point_missing)
+        }
+
+        val repeatSummary = if (repeatCount == 0) {
+            getString(R.string.config_summary_repeat_infinite)
+        } else {
+            getString(R.string.config_summary_repeat_finite, repeatCount)
+        }
+
+        val summaryText = getString(
+            R.string.config_summary_template,
+            pointSummary,
+            intervalMs,
+            intervalMs + randomExtraMs,
+            repeatSummary
+        )
+
+        tvConfigSummary.text = if (intervalInput < 100L) {
+            "$summaryText\n${getString(R.string.interval_adjusted_note)}"
+        } else {
+            summaryText
+        }
     }
 
     private fun registerPointReceiver() {

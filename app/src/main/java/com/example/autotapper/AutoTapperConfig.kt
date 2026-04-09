@@ -14,9 +14,15 @@ object AutoTapperConfig {
     const val ACTION_POINT_SELECTED = "com.example.autotapper.action.POINT_SELECTED"
     const val ACTION_START_CLICKING = "com.example.autotapper.action.START_CLICKING"
     const val ACTION_STOP_CLICKING = "com.example.autotapper.action.STOP_CLICKING"
+    const val ACTION_SHOW_CONTROLLER = "com.example.autotapper.action.SHOW_CONTROLLER"
+    const val ACTION_START_PICKING = "com.example.autotapper.action.START_PICKING"
+    const val ACTION_STOP_CONTROLLER = "com.example.autotapper.action.STOP_CONTROLLER"
+    const val ACTION_CLICK_STATE_CHANGED = "com.example.autotapper.action.CLICK_STATE_CHANGED"
 
     const val EXTRA_TAP_X = "extra_tap_x"
     const val EXTRA_TAP_Y = "extra_tap_y"
+    const val EXTRA_IS_CLICKING = "extra_is_clicking"
+    const val EXTRA_START_PICKING = "extra_start_picking"
 
     fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

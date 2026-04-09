@@ -79,6 +79,13 @@
             android:text="@string/pick_point" />
 
         <Button
+            android:id="@+id/btn_close_controller"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/close_controller" />
+
+        <Button
             android:id="@+id/btn_refresh_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -94,6 +101,23 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/config_intro"
+            android:textColor="#486581"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/interval_label"
+            android:textColor="#102A43"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
         <EditText
             android:id="@+id/et_interval_ms"
             android:layout_width="match_parent"
@@ -104,6 +128,23 @@
             android:hint="@string/interval_hint"
             android:inputType="number"
             android:padding="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/interval_help"
+            android:textColor="#486581"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/random_extra_label"
+            android:textColor="#102A43"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
         <EditText
             android:id="@+id/et_random_extra_ms"
@@ -116,6 +157,23 @@
             android:inputType="number"
             android:padding="12dp" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/random_extra_help"
+            android:textColor="#486581"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/repeat_count_label"
+            android:textColor="#102A43"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
         <EditText
             android:id="@+id/et_repeat_count"
             android:layout_width="match_parent"
@@ -126,6 +184,34 @@
             android:hint="@string/repeat_count_hint"
             android:inputType="number"
             android:padding="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/repeat_count_help"
+            android:textColor="#486581"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/config_summary_title"
+            android:textColor="#102A43"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_config_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#EAF2FF"
+            android:lineSpacingExtra="4dp"
+            android:padding="14dp"
+            android:textColor="#1F3A5F"
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/btn_start"
