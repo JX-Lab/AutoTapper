@@ -1,60 +1,56 @@
-# AutoTapper 自动连点器
+# AutoTapper
 
-AutoTapper 是一个安卓平台上的自动点击工具，基于无障碍服务（Accessibility Service）实现，支持自定义点击位置与间隔，并具备简洁中文界面和随机延迟功能，旨在模拟“人类点击行为”。
+AutoTapper 是一个最小可用的 Android 自动连点器，基于无障碍服务执行点击手势，配合悬浮窗完成屏幕坐标取点。
 
----
+## 当前能力
 
-## 功能特性
+- 支持悬浮窗取点，直接记录屏幕坐标
+- 支持基础点击间隔与随机附加延迟
+- 支持固定次数点击，也支持填 `0` 后无限循环
+- 启用无障碍服务后不会自动开始点击，必须手动点击“开始点击”
+- 适配 Android 7.0 及以上
 
-- 支持点击屏幕记录坐标，设置点击位置
-- 支持单点循环点击
-- 支持“随机延迟”模拟自然点击节奏，防止系统检测
-- 无需 root，基于 Accessibility Service 实现
-- 支持后台悬浮窗控制
-- 中文界面，操作简洁
-- 适配 Android 7+
+## 使用方式
 
----
+1. 安装 APK 并打开应用。
+2. 点击“授予悬浮窗权限”。
+3. 点击“开启无障碍服务”，在系统设置里启用 AutoTapper。
+4. 回到应用后点击“选择点击坐标”，再轻触一次目标位置。
+5. 设置基础间隔、随机附加延迟、重复次数。
+6. 点击“开始点击”执行连点，点击“停止点击”随时停止。
 
-## 使用步骤
+## 本地构建
 
-1. 安装 APK（见下方打包方法）
-2. 进入系统设置 → 无障碍服务 → 开启 AutoTapper
-3. 打开应用，允许悬浮窗权限
-4. 点击“设置坐标”并点击屏幕目标点
-5. 设置间隔时间与是否随机延迟
-6. 开始点击！
+前提：
 
----
+- Android Studio Hedgehog 或更新版本
+- JDK 17
+- 已安装 Android SDK Platform 34 与 Build-Tools
 
-## 如何构建（使用 GitHub Actions 自动打包）
+命令：
 
-本项目使用 GitHub Actions 自动构建 APK。
+```bash
+./gradlew assembleDebug
+```
 
-### 自动打包步骤：
+生成文件位于：
 
-1. 上传完所有项目文件，并确保你有以下内容：
-   - `.github/workflows/android.yml`
-   - 完整的 `app/` 目录结构（包括 Kotlin 源码、布局 XML 等）
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
 
-2. 进入你的仓库主页 → 点击上方菜单栏的 **Actions**
+## GitHub Actions 自动打包
 
-3. 找到自动触发的 `Build Android APK` 流程（或手动点击运行）
+仓库已包含 `.github/workflows/android.yml`，推送到 `main` 分支后会自动构建 Debug APK，也可以在 GitHub 的 `Actions` 页面手动运行。
 
-4. 等待构建完成后，在页面底部找到：
-   **Artifacts > AutoTapper-APK**
+构建完成后，在对应 workflow 的 `Artifacts` 中下载 `AutoTapper-debug-apk` 即可。
 
-5. 点击下载即可获得 `app-debug.apk`
+同时，workflow 也会自动刷新一个固定的 GitHub Release：
 
----
+- Tag: `debug-latest`
+- Asset: `AutoTapper-debug.apk`
 
-## 开发者
+## 注意事项
 
-- 项目整理：君诩（JX-Lab）
-- 辅助生成：ChatGPT（OpenAI）
-
----
-
-## License
-
-本项目为学习与技术交流使用，不建议用于刷量或违反使用协议的行为。
+- 本项目依赖 Android 无障碍能力，请仅在你明确知情和允许的场景下使用。
+- 不建议用于违反平台协议、刷量或规避风控的行为。

@@ -1,7 +1,5 @@
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace 'com.example.autotapper'
@@ -9,13 +7,10 @@ android {
 
     defaultConfig {
         applicationId "com.example.autotapper"
-        minSdk 21
+        minSdk 24
         targetSdk 34
         versionCode 1
-        versionName "1.0"
-
-        // 启用无障碍服务
-        manifestPlaceholders = [appLabel: "AutoTapper"]
+        versionName "1.0.0"
     }
 
     buildTypes {
@@ -33,10 +28,14 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
+    buildFeatures {
+        buildConfig true
+    }
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
 }

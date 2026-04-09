@@ -1,23 +1,45 @@
-<!--
- overlay_layout.xml
- 简单的悬浮窗布局，显示一个按钮，点击后记录坐标并关闭悬浮窗。
--->
-
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#88000000">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/btn_record"
-        android:layout_width="wrap_content"
+    <View
+        android:id="@+id/capture_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#55000000" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="点击屏幕记录坐标"
-        android:textSize="14sp"
-        android:background="@android:color/holo_blue_light"
-        android:textColor="@android:color/white" />
+        android:layout_gravity="top"
+        android:background="#EE102A43"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-</LinearLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/overlay_title"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="@string/overlay_hint"
+            android:textColor="#D7E8F8"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_cancel_capture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/cancel_capture" />
+    </LinearLayout>
+</FrameLayout>

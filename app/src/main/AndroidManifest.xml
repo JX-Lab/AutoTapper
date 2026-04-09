@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.autotapper">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -9,12 +8,13 @@
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/ic_autotapper"
+        android:roundIcon="@drawable/ic_autotapper"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
-        <activity android:name=".MainActivity"
+        <activity
+            android:name="com.example.autotapper.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,9 +22,8 @@
             </intent-filter>
         </activity>
 
-        <!-- 注册无障碍服务 -->
         <service
-            android:name=".AutoClickService"
+            android:name="com.example.autotapper.AutoClickService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="false">
             <intent-filter>
@@ -35,7 +34,8 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- 悬浮窗服务 -->
-        <service android:name=".OverlayService" />
+        <service
+            android:name="com.example.autotapper.OverlayService"
+            android:exported="false" />
     </application>
 </manifest>
