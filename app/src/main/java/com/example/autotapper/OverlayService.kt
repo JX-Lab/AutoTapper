@@ -1,5 +1,8 @@
 package com.example.autotapper
 
+import android.animation.Animator
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -14,49 +17,123 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.view.animation.Animation
-import android.view.animation.AlphaAnimation
-import android.widget.Button
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
+import kotlin.math.abs
 
 class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
 
-    private var collapsedHandleView: TextView? = null
+    private var collapsedHandleView: ImageView? = null
     private var controllerView: LinearLayout? = null
     private var controllerStatusView: TextView? = null
+    private var pointsTextView: TextView? = null
     private var playButtonView: ImageView? = null
     private var clearButtonView: ImageView? = null
-    private var pointMarkerView: View? = null
     private var pickerView: View? = null
+    private var pickerCounterView: TextView? = null
+    private val pointMarkers: MutableList<View> = mutableListOf()
+    private val markerAnimators: MutableMap<View, ObjectAnimator> = mutableMapOf()
 
     private var isControllerExpanded = false
     private var isClicking = false
+    private var currentPointIndex = -1
+    private var sessionStartCount = 0
+
+    // 悬浮组件当前锚点位置（屏幕坐标，重力 TOP|START），拖动后随之更新
+    private var floatX = -1
+    private var floatY = -1
+
+    // 收起状态下悬浮球应处的位置。展开后如未拖动控制器，收起时回到此位置。
+    private var collapsedAnchorX = -1
+    private var collapsedAnchorY = -1
+
+    // 控制器透明度（0.3 ~ 1.0）
+    private var controllerAlpha = 0.9f
+
+    private var dragDownRawX = 0f
+    private var dragDownRawY = 0f
+    private var dragStartX = 0
+    private var dragStartY = 0
+    private var dragActive = false
+
+    private val touchSlop: Int
+        get() = ViewConfiguration.get(this).scaledTouchSlop
+
+    private val dragTouchListener = View.OnTouchListener { view, event ->
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                dragDownRawX = event.rawX
+                dragDownRawY = event.rawY
+                dragStartX = floatX.coerceAtLeast(0)
+                dragStartY = floatY.coerceAtLeast(0)
+                dragActive = false
+                true
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val dx = (event.rawX - dragDownRawX).toInt()
+                val dy = (event.rawY - dragDownRawY).toInt()
+                if (!dragActive && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
+                    dragActive = true
+                }
+                if (dragActive) {
+                    val params = view.layoutParams as WindowManager.LayoutParams
+                    params.x = (dragStartX + dx).coerceIn(0, maxOf(0, screenWidth - view.width))
+                    params.y = (dragStartY + dy).coerceIn(0, maxOf(0, screenHeight - view.height))
+                    windowManager.updateViewLayout(view, params)
+                    floatX = params.x
+                    floatY = params.y
+                    collapsedAnchorX = params.x
+                    collapsedAnchorY = params.y
+                }
+                true
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (!dragActive) {
+                    view.performClick()
+                }
+                true
+            }
+
+            else -> true
+        }
+    }
 
     private val serviceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 AutoTapperConfig.ACTION_CLICK_STATE_CHANGED -> {
                     isClicking = intent.getBooleanExtra(AutoTapperConfig.EXTRA_IS_CLICKING, false)
+                    currentPointIndex =
+                        intent.getIntExtra(AutoTapperConfig.EXTRA_CURRENT_POINT_INDEX, -1)
                     refreshControllerState()
-                    refreshMarker()
+                    refreshMarkers()
                     refreshNotification()
                 }
 
                 AutoTapperConfig.ACTION_POINT_SELECTED -> {
                     refreshControllerState()
-                    refreshMarker()
+                    refreshMarkers()
+                }
+
+                AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED -> {
+                    refreshControllerAlpha()
                 }
             }
         }
@@ -67,9 +144,9 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        controllerAlpha = AutoTapperConfig.getControllerAlpha(this)
         registerServiceReceiver()
         startAsForegroundService()
-        showCollapsedHandle()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -90,7 +167,7 @@ class OverlayService : Service() {
             }
 
             AutoTapperConfig.ACTION_SHOW_CONTROLLER -> {
-                if (intent?.getBooleanExtra(AutoTapperConfig.EXTRA_START_PICKING, false) == true) {
+                if (intent.getBooleanExtra(AutoTapperConfig.EXTRA_START_PICKING, false)) {
                     showExpandedController()
                     showPickerOverlay()
                 } else {
@@ -98,7 +175,7 @@ class OverlayService : Service() {
                 }
             }
 
-            null -> showCollapsedHandle()
+            null -> showCollapsedHandle(animate = false)
         }
 
         return START_STICKY
@@ -107,13 +184,15 @@ class OverlayService : Service() {
     override fun onDestroy() {
         stopClickingIfNeeded()
         dismissPickerOverlay()
-        removeViewSafely(pointMarkerView)
+        hideMarkers()
         removeViewSafely(controllerView)
         removeViewSafely(collapsedHandleView)
-        pointMarkerView = null
+        pointMarkers.clear()
+        markerAnimators.clear()
         controllerView = null
         collapsedHandleView = null
         controllerStatusView = null
+        pointsTextView = null
         playButtonView = null
         clearButtonView = null
         runCatching { unregisterReceiver(serviceReceiver) }
@@ -124,6 +203,7 @@ class OverlayService : Service() {
         val filter = IntentFilter().apply {
             addAction(AutoTapperConfig.ACTION_CLICK_STATE_CHANGED)
             addAction(AutoTapperConfig.ACTION_POINT_SELECTED)
+            addAction(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(serviceReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -158,7 +238,11 @@ class OverlayService : Service() {
             )
             .setOngoing(true)
             .setContentIntent(buildOpenAppPendingIntent())
-            .addAction(0, getString(R.string.overlay_notification_stop), buildStopControllerPendingIntent())
+            .addAction(
+                0,
+                getString(R.string.overlay_notification_stop),
+                buildStopControllerPendingIntent()
+            )
             .build()
 
     private fun refreshNotification() {
@@ -177,7 +261,8 @@ class OverlayService : Service() {
     }
 
     private fun buildStopControllerPendingIntent(): PendingIntent {
-        val intent = Intent(this, OverlayService::class.java).setAction(AutoTapperConfig.ACTION_STOP_CONTROLLER)
+        val intent = Intent(this, OverlayService::class.java)
+            .setAction(AutoTapperConfig.ACTION_STOP_CONTROLLER)
         return PendingIntent.getService(
             this,
             101,
@@ -200,52 +285,145 @@ class OverlayService : Service() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun showCollapsedHandle() {
+    private fun showCollapsedHandle(animate: Boolean = true) {
         isControllerExpanded = false
         dismissPickerOverlay()
-        removeViewSafely(controllerView)
+        val previousController = controllerView
         controllerView = null
         controllerStatusView = null
+        pointsTextView = null
         playButtonView = null
         clearButtonView = null
-        hideMarker()
+        hideMarkers()
 
-        if (collapsedHandleView == null) {
-            val handle = TextView(this).apply {
-                gravity = Gravity.CENTER
-                setTextColor(Color.parseColor("#111111"))
-                textSize = 13f
-                setPadding(dp(14), dp(12), dp(14), dp(12))
-                setOnClickListener { showExpandedController() }
+        val x = if (collapsedAnchorX >= 0) collapsedAnchorX else floatX.coerceAtLeast(0)
+        val y = if (collapsedAnchorY >= 0) collapsedAnchorY else floatY.coerceAtLeast(0)
+        floatX = x
+        floatY = y
+
+        val handle = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            scaleType = ImageView.ScaleType.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setImageResource(R.drawable.ic_floating_handle)
+            setColorFilter(color(R.color.on_primary))
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
+            setOnClickListener { showExpandedController() }
+            setOnTouchListener(dragTouchListener)
+            elevation = 8f
+            alpha = if (animate) 0f else controllerAlpha
+            translationX = if (animate) dp(48).toFloat() else 0f
+        }
+        windowManager.addView(handle, floatLayoutParams(x, y))
+        collapsedHandleView = handle
+
+        handle.post {
+            if (collapsedHandleView !== handle) {
+                return@post
             }
-            windowManager.addView(handle, collapsedLayoutParams())
-            collapsedHandleView = handle
+            if (floatX < 0 || floatY < 0) {
+                floatX = screenWidth - handle.width - dp(8)
+                floatY = (screenHeight - handle.height) / 2
+                collapsedAnchorX = floatX
+                collapsedAnchorY = floatY
+            }
+            updateFloatPosition(handle)
+        }
+
+        if (animate) {
+            previousController?.animate()
+                ?.alpha(0f)
+                ?.translationX((-dp(48)).toFloat())
+                ?.setDuration(ANIMATION_DURATION)
+                ?.setInterpolator(AccelerateDecelerateInterpolator())
+                ?.withEndAction { removeViewSafely(previousController) }
+                ?.start()
+
+            handle.animate()
+                .alpha(controllerAlpha)
+                .translationX(0f)
+                .setDuration(ANIMATION_DURATION)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .start()
+        } else {
+            removeViewSafely(previousController)
         }
 
         refreshControllerState()
     }
 
-    private fun showExpandedController() {
+    private fun showExpandedController(animate: Boolean = true) {
         isControllerExpanded = true
-        removeViewSafely(collapsedHandleView)
+        val previousHandle = collapsedHandleView
         collapsedHandleView = null
 
-        if (controllerView == null) {
-            val view = buildControllerView()
-            windowManager.addView(view, controllerLayoutParams())
-            controllerView = view
+        if (floatX < 0 || floatY < 0) {
+            floatX = (screenWidth - dp(170)).coerceAtLeast(0)
+            floatY = (screenHeight - dp(180)) / 2
+            collapsedAnchorX = floatX
+            collapsedAnchorY = floatY
+        }
+
+        val view = buildControllerView()
+        view.setOnTouchListener(dragTouchListener)
+        view.alpha = if (animate) 0f else controllerAlpha
+        view.translationX = if (animate) dp(48).toFloat() else 0f
+        windowManager.addView(
+            view,
+            floatLayoutParams(floatX.coerceAtLeast(0), floatY.coerceAtLeast(0))
+        )
+        controllerView = view
+
+        view.post {
+            if (controllerView !== view) {
+                return@post
+            }
+            floatX = floatX.coerceIn(0, maxOf(0, screenWidth - view.width - dp(8)))
+            floatY = floatY.coerceIn(0, maxOf(0, screenHeight - view.height - dp(8)))
+            updateFloatPosition(view)
+        }
+
+        if (animate) {
+            previousHandle?.animate()
+                ?.alpha(0f)
+                ?.translationX((-dp(48)).toFloat())
+                ?.setDuration(ANIMATION_DURATION)
+                ?.setInterpolator(AccelerateDecelerateInterpolator())
+                ?.withEndAction { removeViewSafely(previousHandle) }
+                ?.start()
+
+            view.animate()
+                .alpha(controllerAlpha)
+                .translationX(0f)
+                .setDuration(ANIMATION_DURATION)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .start()
+        } else {
+            removeViewSafely(previousHandle)
         }
 
         refreshControllerState()
-        refreshMarker()
+        refreshMarkers()
+    }
+
+    private fun updateFloatPosition(view: View) {
+        val params = view.layoutParams as WindowManager.LayoutParams
+        params.x = floatX
+        params.y = floatY
+        windowManager.updateViewLayout(view, params)
     }
 
     private fun buildControllerView(): LinearLayout {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedDrawable("#F7FAFC", "#CBD2D9", 18f)
+            background = roundedDrawable(
+                fillColor = color(R.color.surface_container),
+                strokeColor = color(R.color.outline),
+                radiusDp = 16f
+            )
             setPadding(dp(14), dp(14), dp(14), dp(14))
-            elevation = 12f
+            elevation = resources.getDimension(R.dimen.overlay_elevation)
+            alpha = controllerAlpha
         }
 
         val header = LinearLayout(this).apply {
@@ -255,16 +433,20 @@ class OverlayService : Service() {
 
         val collapseChip = TextView(this).apply {
             text = getString(R.string.overlay_collapse_label)
-            setTextColor(Color.parseColor("#102A43"))
+            setTextColor(color(R.color.text_primary))
             textSize = 13f
-            background = roundedDrawable("#FFFFFF", "#D0D7DE", 12f)
+            background = roundedDrawable(
+                fillColor = color(R.color.card_bg),
+                strokeColor = color(R.color.outline),
+                radiusDp = 12f
+            )
             setPadding(dp(10), dp(6), dp(10), dp(6))
             setOnClickListener { showCollapsedHandle() }
         }
 
         val title = TextView(this).apply {
             text = getString(R.string.overlay_controller_title)
-            setTextColor(Color.parseColor("#102A43"))
+            setTextColor(color(R.color.text_primary))
             textSize = 15f
             setPadding(dp(10), 0, 0, 0)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -298,7 +480,7 @@ class OverlayService : Service() {
             iconRes = R.drawable.ic_overlay_delete,
             contentDescriptionRes = R.string.overlay_clear_button_desc
         ).apply {
-            setOnClickListener { clearSelectedPoint() }
+            setOnClickListener { removeLastPoint() }
         }
         clearButtonView = clearButton
 
@@ -317,15 +499,25 @@ class OverlayService : Service() {
         buttonRow.addView(playButton)
 
         val statusView = TextView(this).apply {
-            setTextColor(Color.parseColor("#486581"))
+            setTextColor(color(R.color.text_secondary))
             textSize = 13f
             setPadding(0, dp(12), 0, 0)
         }
         controllerStatusView = statusView
 
+        val pointsView = TextView(this).apply {
+            setTextColor(color(R.color.text_secondary))
+            textSize = 12f
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(4), 0, 0)
+        }
+        pointsTextView = pointsView
+
         root.addView(header)
         root.addView(buttonRow)
         root.addView(statusView)
+        root.addView(pointsView)
         return root
     }
 
@@ -336,9 +528,9 @@ class OverlayService : Service() {
             adjustViewBounds = true
             setPadding(dp(10), dp(10), dp(10), dp(10))
             setImageResource(iconRes)
-            setColorFilter(Color.parseColor("#111111"))
-            contentDescription = getString(contentDescriptionRes)
-            background = roundedDrawable("#FFFFFF", "#D0D7DE", 14f)
+            setColorFilter(color(R.color.text_primary))
+            this.contentDescription = getString(contentDescriptionRes)
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_circular_button)
         }
 
     private fun spacerView() = View(this).apply {
@@ -350,68 +542,105 @@ class OverlayService : Service() {
             return
         }
 
-        hideMarker()
-        val view = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
+        sessionStartCount = AutoTapperConfig.loadPoints(this).size
+
+        // Service 上下文没有 MaterialComponents 主题，MaterialButton 膨胀会崩溃，需包一层主题
+        val themedContext = android.view.ContextThemeWrapper(this, R.style.Theme_AutoTapper)
+        val view = LayoutInflater.from(themedContext).inflate(R.layout.overlay_layout, null)
+        pickerCounterView = view.findViewById(R.id.tv_picker_counter)
+        updatePickerCounter()
+
         view.findViewById<View>(R.id.capture_root).setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
-                saveSelectedPoint(event.rawX.toInt(), event.rawY.toInt())
+                addPickedPoint(event.rawX.toInt(), event.rawY.toInt())
                 true
             } else {
                 true
             }
         }
-        view.findViewById<Button>(R.id.btn_cancel_capture).setOnClickListener {
-            dismissPickerOverlay()
-            refreshMarker()
+        view.findViewById<View>(R.id.btn_finish_capture).setOnClickListener {
+            finishPicking()
         }
+        view.findViewById<View>(R.id.btn_cancel_capture).setOnClickListener {
+            cancelPicking()
+        }
+
+        view.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_picker).alpha = controllerAlpha
 
         windowManager.addView(view, fullscreenLayoutParams())
         pickerView = view
+        refreshMarkers()
     }
 
     private fun dismissPickerOverlay() {
         removeViewSafely(pickerView)
         pickerView = null
+        pickerCounterView = null
     }
 
-    private fun saveSelectedPoint(x: Int, y: Int) {
-        AutoTapperConfig.prefs(this)
-            .edit()
-            .putInt(AutoTapperConfig.KEY_TAP_X, x)
-            .putInt(AutoTapperConfig.KEY_TAP_Y, y)
-            .apply()
+    private fun addPickedPoint(x: Int, y: Int) {
+        AutoTapperConfig.addPoint(this, x, y)
+        broadcastPointsChanged(x, y)
+        updatePickerCounter()
+        refreshMarkers()
+        Toast.makeText(this, getString(R.string.point_added_toast, x, y), Toast.LENGTH_SHORT)
+            .show()
+    }
 
-        sendPointSelectedBroadcast(x, y)
+    private fun finishPicking() {
         dismissPickerOverlay()
         refreshControllerState()
-        refreshMarker()
-        Toast.makeText(this, getString(R.string.point_selected_toast, x, y), Toast.LENGTH_SHORT).show()
+        refreshMarkers()
+        Toast.makeText(
+            this,
+            getString(R.string.picking_finished_toast, AutoTapperConfig.loadPoints(this).size),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
-    private fun clearSelectedPoint() {
-        if (isClicking) {
-            sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+    private fun cancelPicking() {
+        val all = AutoTapperConfig.loadPoints(this)
+        if (all.size > sessionStartCount) {
+            AutoTapperConfig.savePoints(this, all.take(sessionStartCount))
         }
-
-        AutoTapperConfig.prefs(this)
-            .edit()
-            .putInt(AutoTapperConfig.KEY_TAP_X, -1)
-            .putInt(AutoTapperConfig.KEY_TAP_Y, -1)
-            .apply()
-
-        sendPointSelectedBroadcast(-1, -1)
+        broadcastPointsChanged()
+        dismissPickerOverlay()
         refreshControllerState()
-        refreshMarker()
-        Toast.makeText(this, R.string.point_cleared_toast, Toast.LENGTH_SHORT).show()
+        refreshMarkers()
+        Toast.makeText(this, R.string.picking_cancelled_toast, Toast.LENGTH_SHORT).show()
     }
 
-    private fun sendPointSelectedBroadcast(x: Int, y: Int) {
+    private fun updatePickerCounter() {
+        pickerCounterView?.text = getString(
+            R.string.picker_counter_template,
+            AutoTapperConfig.loadPoints(this).size
+        )
+    }
+
+    private fun broadcastPointsChanged(x: Int = -1, y: Int = -1) {
         sendBroadcast(
             Intent(AutoTapperConfig.ACTION_POINT_SELECTED)
                 .setPackage(packageName)
                 .putExtra(AutoTapperConfig.EXTRA_TAP_X, x)
                 .putExtra(AutoTapperConfig.EXTRA_TAP_Y, y)
         )
+    }
+
+    private fun removeLastPoint() {
+        if (isClicking) {
+            sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+        }
+
+        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
+            Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AutoTapperConfig.removeLastPoint(this)
+        broadcastPointsChanged()
+        refreshControllerState()
+        refreshMarkers()
+        Toast.makeText(this, R.string.point_removed_toast, Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleClicking() {
@@ -421,12 +650,12 @@ class OverlayService : Service() {
         }
 
         if (!PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)) {
-            Toast.makeText(this, R.string.accessibility_permission_required, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.accessibility_permission_required, Toast.LENGTH_SHORT)
+                .show()
             return
         }
 
-        val (x, y) = currentPoint()
-        if (x < 0 || y < 0) {
+        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
             Toast.makeText(this, R.string.point_required, Toast.LENGTH_SHORT).show()
             return
         }
@@ -434,15 +663,34 @@ class OverlayService : Service() {
         sendBroadcast(Intent(AutoTapperConfig.ACTION_START_CLICKING).setPackage(packageName))
     }
 
+    private fun refreshControllerAlpha() {
+        controllerAlpha = AutoTapperConfig.getControllerAlpha(this)
+        controllerView?.alpha = controllerAlpha
+        collapsedHandleView?.alpha = controllerAlpha
+        pickerView?.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_picker)?.alpha = controllerAlpha
+    }
+
     private fun refreshControllerState() {
-        val hasPoint = hasSelectedPoint()
+        val hasPoint = AutoTapperConfig.hasPoints(this)
+
         collapsedHandleView?.apply {
-            text = if (isClicking) getString(R.string.overlay_handle_running)
-            else getString(R.string.overlay_handle_idle)
             background = roundedDrawable(
-                fillColor = if (isClicking) "#E6FFFFFF" else "#CCFFFFFF",
-                strokeColor = if (isClicking) "#4D111111" else "#33111111",
-                radiusDp = 18f
+                fillColor = if (isClicking) {
+                    color(R.color.accent_container)
+                } else {
+                    color(R.color.primary)
+                },
+                strokeColor = if (isClicking) {
+                    color(R.color.accent)
+                } else {
+                    color(R.color.primary_container)
+                },
+                radiusDp = 24f,
+                shape = GradientDrawable.OVAL
+            )
+            setColorFilter(
+                if (isClicking) color(R.color.on_accent_container)
+                else color(R.color.on_primary)
             )
         }
 
@@ -456,6 +704,7 @@ class OverlayService : Service() {
 
         clearButtonView?.alpha = if (hasPoint) 1f else 0.55f
         controllerStatusView?.text = buildControllerStatusText()
+        pointsTextView?.text = buildControllerPointsText()
     }
 
     private fun buildControllerStatusText(): String {
@@ -463,13 +712,7 @@ class OverlayService : Service() {
         val intervalMs = prefs.getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).coerceAtLeast(100L)
         val randomExtraMs = prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L)
         val repeatCount = prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
-        val (x, y) = currentPoint()
 
-        val pointText = if (x >= 0 && y >= 0) {
-            getString(R.string.overlay_point_template, x, y)
-        } else {
-            getString(R.string.overlay_point_missing)
-        }
         val repeatText = if (repeatCount == 0) {
             getString(R.string.overlay_repeat_infinite)
         } else {
@@ -481,81 +724,98 @@ class OverlayService : Service() {
         return getString(
             R.string.overlay_status_template,
             stateText,
-            pointText,
             intervalMs,
             intervalMs + randomExtraMs,
             repeatText
         )
     }
 
-    private fun refreshMarker() {
-        val (x, y) = currentPoint()
-        val shouldShowMarker = isControllerExpanded && pickerView == null && x >= 0 && y >= 0
-        if (!shouldShowMarker) {
-            hideMarker()
-            return
+    private fun buildControllerPointsText(): String {
+        val points = AutoTapperConfig.loadPoints(this)
+        if (points.isEmpty()) {
+            return getString(R.string.overlay_point_missing)
         }
-
-        val marker = pointMarkerView ?: View(this).also { view ->
-            view.background = roundedDrawable("#66F97316", "#CCEA580C", 20f)
-            windowManager.addView(view, markerLayoutParams(x, y))
-            pointMarkerView = view
-        }
-
-        windowManager.updateViewLayout(marker, markerLayoutParams(x, y))
-        if (isClicking) {
-            startMarkerPulse(marker)
+        val maxShown = 2
+        val head = points.take(maxShown).joinToString("  ") { "(${it.x},${it.y})" }
+        return if (points.size > maxShown) {
+            "$head  ${getString(R.string.overlay_points_more, points.size - maxShown)}"
         } else {
-            marker.clearAnimation()
-            marker.alpha = 0.75f
+            head
         }
     }
 
-    private fun hideMarker() {
-        pointMarkerView?.clearAnimation()
-        removeViewSafely(pointMarkerView)
-        pointMarkerView = null
+    private fun refreshMarkers() {
+        val points = AutoTapperConfig.loadPoints(this)
+        if (!isControllerExpanded || points.isEmpty()) {
+            hideMarkers()
+            return
+        }
+
+        while (pointMarkers.size < points.size) {
+            val marker = View(this).apply {
+                background = roundedDrawable(
+                    fillColor = applyAlpha(color(R.color.accent), 0x66),
+                    strokeColor = applyAlpha(color(R.color.accent), 0xCC),
+                    radiusDp = 20f,
+                    shape = GradientDrawable.OVAL
+                )
+            }
+            windowManager.addView(marker, markerLayoutParams(0, 0))
+            pointMarkers.add(marker)
+        }
+        while (pointMarkers.size > points.size) {
+            val removed = pointMarkers.removeAt(pointMarkers.size - 1)
+            stopMarkerPulse(removed)
+            removeViewSafely(removed)
+        }
+
+        points.forEachIndexed { index, point ->
+            val marker = pointMarkers[index]
+            windowManager.updateViewLayout(marker, markerLayoutParams(point.x, point.y))
+            if (isClicking && index == currentPointIndex) {
+                marker.alpha = 1f
+                startMarkerPulse(marker)
+            } else {
+                stopMarkerPulse(marker)
+                marker.alpha = 0.75f
+                marker.scaleX = 1f
+                marker.scaleY = 1f
+            }
+        }
+    }
+
+    private fun hideMarkers() {
+        pointMarkers.forEach { marker ->
+            stopMarkerPulse(marker)
+            removeViewSafely(marker)
+        }
+        pointMarkers.clear()
     }
 
     private fun startMarkerPulse(view: View) {
-        if (view.animation != null) {
+        if (markerAnimators[view] != null) {
             return
         }
-
-        view.startAnimation(
-            AlphaAnimation(0.35f, 1f).apply {
-                duration = 280L
-                repeatCount = Animation.INFINITE
-                repeatMode = Animation.REVERSE
-            }
-        )
-    }
-
-    private fun currentPoint(): Pair<Int, Int> {
-        val prefs = AutoTapperConfig.prefs(this)
-        return prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1) to
-            prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1)
-    }
-
-    private fun hasSelectedPoint(): Boolean {
-        val (x, y) = currentPoint()
-        return x >= 0 && y >= 0
-    }
-
-    private fun collapsedLayoutParams() =
-        WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            overlayWindowType(),
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
+        val animator = ObjectAnimator.ofPropertyValuesHolder(
+            view,
+            PropertyValuesHolder.ofFloat("scaleX", 1f, 1.25f),
+            PropertyValuesHolder.ofFloat("scaleY", 1f, 1.25f),
+            PropertyValuesHolder.ofFloat("alpha", 0.5f, 1f)
         ).apply {
-            gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            x = dp(8)
+            duration = 600L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
         }
+        markerAnimators[view] = animator
+    }
 
-    private fun controllerLayoutParams() =
+    private fun stopMarkerPulse(view: View) {
+        markerAnimators.remove(view)?.cancel()
+    }
+
+    private fun floatLayoutParams(x: Int, y: Int) =
         WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -564,8 +824,9 @@ class OverlayService : Service() {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            x = dp(12)
+            gravity = Gravity.TOP or Gravity.START
+            this.x = x
+            this.y = y
         }
 
     private fun markerLayoutParams(x: Int, y: Int): WindowManager.LayoutParams {
@@ -597,13 +858,22 @@ class OverlayService : Service() {
             gravity = Gravity.TOP or Gravity.START
         }
 
-    private fun roundedDrawable(fillColor: String, strokeColor: String, radiusDp: Float) =
-        GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = dp(radiusDp.toInt()).toFloat()
-            setColor(Color.parseColor(fillColor))
-            setStroke(dp(1), Color.parseColor(strokeColor))
-        }
+    private fun roundedDrawable(
+        fillColor: Int,
+        strokeColor: Int,
+        radiusDp: Float,
+        shape: Int = GradientDrawable.RECTANGLE
+    ) = GradientDrawable().apply {
+        this.shape = shape
+        cornerRadius = dp(radiusDp.toInt()).toFloat()
+        setColor(fillColor)
+        setStroke(dp(1), strokeColor)
+    }
+
+    private fun applyAlpha(color: Int, alpha: Int): Int =
+        (color and 0x00FFFFFF) or (alpha shl 24)
+
+    private fun color(resId: Int): Int = ContextCompat.getColor(this, resId)
 
     private fun removeViewSafely(view: View?) {
         view ?: return
@@ -630,11 +900,18 @@ class OverlayService : Service() {
         }
     }
 
+    private val screenWidth: Int
+        get() = resources.displayMetrics.widthPixels
+
+    private val screenHeight: Int
+        get() = resources.displayMetrics.heightPixels
+
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
 
     companion object {
         private const val NOTIFICATION_CHANNEL_ID = "autotapper_overlay_controller"
         private const val NOTIFICATION_ID = 1001
+        private const val ANIMATION_DURATION = 250L
     }
 }

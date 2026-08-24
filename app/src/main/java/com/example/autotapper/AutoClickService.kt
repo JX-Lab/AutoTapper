@@ -19,10 +19,10 @@ class AutoClickService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private var receiverRegistered = false
     private var isClicking = false
-    private var completedClicks = 0
+    private var roundsCompleted = 0
+    private var pointIndex = 0
 
-    private var tapX = -1
-    private var tapY = -1
+    private var points: List<TapPoint> = emptyList()
     private var intervalMs = 400L
     private var randomExtraMs = 80L
     private var repeatCount = 0
@@ -64,15 +64,23 @@ class AutoClickService : AccessibilityService() {
             return
         }
 
-        if (repeatCount > 0 && completedClicks >= repeatCount) {
-            stopClicking(showToast = true, message = getString(R.string.click_completed, completedClicks))
+        if (points.isEmpty()) {
+            stopClicking(showToast = true, message = getString(R.string.point_required))
             return
         }
+
+        if (repeatCount > 0 && roundsCompleted >= repeatCount) {
+            stopClicking(showToast = true, message = getString(R.string.click_completed, roundsCompleted))
+            return
+        }
+
+        val point = points[pointIndex]
+        broadcastCurrentPoint(pointIndex)
 
         val gesture: GestureDescription = GestureDescription.Builder()
             .addStroke(
                 GestureDescription.StrokeDescription(
-                    Path().apply { moveTo(tapX.toFloat(), tapY.toFloat()) },
+                    Path().apply { moveTo(point.x.toFloat(), point.y.toFloat()) },
                     0,
                     40
                 )
@@ -84,9 +92,14 @@ class AutoClickService : AccessibilityService() {
             object : GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription?) {
                     super.onCompleted(gestureDescription)
-                    completedClicks++
                     if (!isClicking) {
                         return
+                    }
+
+                    pointIndex++
+                    if (pointIndex >= points.size) {
+                        pointIndex = 0
+                        roundsCompleted++
                     }
 
                     val randomDelay: Long = if (randomExtraMs > 0) {
@@ -111,19 +124,21 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun startClicking() {
-        val prefs = AutoTapperConfig.prefs(this)
-        tapX = prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1)
-        tapY = prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1)
-        intervalMs = prefs.getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).coerceAtLeast(100L)
-        randomExtraMs = prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L)
-        repeatCount = prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
+        points = AutoTapperConfig.loadPoints(this)
+        intervalMs = AutoTapperConfig.prefs(this)
+            .getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).coerceAtLeast(100L)
+        randomExtraMs = AutoTapperConfig.prefs(this)
+            .getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L)
+        repeatCount = AutoTapperConfig.prefs(this)
+            .getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
 
-        if (tapX < 0 || tapY < 0) {
+        if (points.isEmpty()) {
             Toast.makeText(this, R.string.point_required, Toast.LENGTH_SHORT).show()
             return
         }
 
-        completedClicks = 0
+        roundsCompleted = 0
+        pointIndex = 0
         isClicking = true
         broadcastClickState(true)
         clearPendingClicks()
@@ -156,6 +171,19 @@ class AutoClickService : AccessibilityService() {
             Intent(AutoTapperConfig.ACTION_CLICK_STATE_CHANGED)
                 .setPackage(packageName)
                 .putExtra(AutoTapperConfig.EXTRA_IS_CLICKING, isRunning)
+                .putExtra(
+                    AutoTapperConfig.EXTRA_CURRENT_POINT_INDEX,
+                    if (isRunning) pointIndex else -1
+                )
+        )
+    }
+
+    private fun broadcastCurrentPoint(index: Int) {
+        sendBroadcast(
+            Intent(AutoTapperConfig.ACTION_CLICK_STATE_CHANGED)
+                .setPackage(packageName)
+                .putExtra(AutoTapperConfig.EXTRA_IS_CLICKING, true)
+                .putExtra(AutoTapperConfig.EXTRA_CURRENT_POINT_INDEX, index)
         )
     }
 

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colors -->
+    <color name="primary">#0F766E</color>
+    <color name="primary_dark">#115E59</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#E0F2EF</color>
+    <color name="on_primary_container">#0F3D39</color>
+
+    <color name="accent">#EA580C</color>
+    <color name="accent_dark">#C2410C</color>
+    <color name="accent_container">#FFE4C2</color>
+    <color name="on_accent_container">#5E2402</color>
+
+    <color name="tertiary">#0061A4</color>
+    <color name="tertiary_container">#D1E4FF</color>
+    <color name="on_tertiary_container">#001D36</color>
+
+    <!-- Semantic colors -->
+    <color name="success">#16A34A</color>
+    <color name="danger">#DC2626</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="on_error_container">#410002</color>
+
+    <!-- Surface / Background -->
+    <color name="bg_page">#F4F7FB</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="surface_variant">#EAF3F1</color>
+    <color name="surface_container">#EAF3F1</color>
+    <color name="surface_container_high">#E0ECEA</color>
+    <color name="surface_container_highest">#D6E5E2</color>
+
+    <!-- Text -->
+    <color name="text_primary">#102A43</color>
+    <color name="text_secondary">#486581</color>
+
+    <!-- Outline -->
+    <color name="outline">#C3E4DE</color>
+    <color name="outline_variant">#D0DCEA</color>
+
+    <!-- Legacy / overlay specific -->
+    <color name="overlay_bar">#EE102A43</color>
+</resources>

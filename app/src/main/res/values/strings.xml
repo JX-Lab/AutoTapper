@@ -1,61 +1,90 @@
 <resources>
     <string name="app_name">AutoTapper</string>
     <string name="screen_title">AutoTapper 自动连点器</string>
-    <string name="screen_subtitle">先授予权限，再打开悬浮控制器。当前版本支持单点连续点击：你可以在任意应用中通过侧边悬浮控制器取点、开始点击和停止点击。</string>
-    <string name="status_title">当前状态</string>
-    <string name="permission_state_template">悬浮窗权限：%1$s\n无障碍服务：%2$s</string>
+    <string name="screen_subtitle">支持多点击顺序轮流点击：在任意应用中通过可拖动的悬浮控制器连续取点、开始点击和停止点击。</string>
+    <string name="version_label">版本 v%1$s</string>
+    <string name="check_update">检查更新</string>
+    <string name="status_title">权限状态</string>
+    <string name="overlay_permission_state">悬浮窗权限：%1$s</string>
+    <string name="accessibility_permission_state">无障碍服务：%1$s</string>
     <string name="permission_granted">已授予</string>
     <string name="permission_missing">未开启</string>
-    <string name="selected_point_template">当前点击点位（单点）：(%1$d, %2$d)</string>
-    <string name="point_not_selected">当前点击点位（单点）：尚未选择</string>
-    <string name="grant_overlay">1. 授予悬浮窗权限</string>
-    <string name="grant_accessibility">2. 开启无障碍服务</string>
-    <string name="pick_point">3. 打开悬浮控制器</string>
-    <string name="refresh_status">刷新权限状态</string>
+    <string name="grant_permission_button">去授权</string>
+
+    <string name="points_title">点击点位</string>
+    <string name="points_count_badge">%1$d 个点</string>
+    <string name="points_empty">还没有点位。打开悬浮控制器，点击 + 连续添加点击位置。</string>
+    <string name="open_controller">打开悬浮控制器取点</string>
+    <string name="point_item_index">点 %1$d</string>
+    <string name="point_item_coords">(%1$d, %2$d)</string>
+    <string name="delete_point_desc">删除该点位</string>
+    <string name="point_deleted_toast">已删除点位 %1$d。</string>
+
     <string name="config_title">点击配置</string>
-    <string name="config_intro">悬浮控制器会直接读取下面的 3 个值：实际等待时间 = 基础间隔 + 0 到随机附加延迟之间的随机值。</string>
+    <string name="config_intro">多点模式会按点位顺序轮流点击。实际等待时间 = 基础间隔 + 0 到随机附加延迟之间的随机值。</string>
     <string name="interval_label">基础间隔</string>
-    <string name="interval_hint">例如 400</string>
-    <string name="interval_help">单位毫秒。表示两次点击之间至少等待多久。1000 毫秒 = 1 秒，建议先从 300 到 800 之间尝试。</string>
+    <string name="interval_help">单位毫秒，表示每次点击之间至少等待多久。建议先从 300 到 800 之间尝试。</string>
     <string name="random_extra_label">随机附加延迟</string>
-    <string name="random_extra_hint">例如 80</string>
-    <string name="random_extra_help">单位毫秒。每次会在基础间隔上额外随机增加 0 到该数值之间的延迟。填 0 表示固定节奏，不加随机。</string>
-    <string name="repeat_count_label">点击次数</string>
-    <string name="repeat_count_hint">例如 0 / 10 / 100</string>
-    <string name="repeat_count_help">填 1 表示只点击 1 次；填 10 表示点击 10 次；填 0 表示一直点击，直到你手动停止。</string>
+    <string name="random_extra_help">单位毫秒，每次在基础间隔上额外随机增加 0 到该数值之间的延迟。填 0 表示固定节奏。</string>
+    <string name="repeat_count_label">点击轮数</string>
+    <string name="repeat_count_help">每轮按顺序把每个点位各点一次。填 1 = 每个点位各点 1 次；填 10 = 完整跑 10 轮；填 0 = 一直点击直到手动停止。</string>
+    <string name="controller_alpha_label">悬浮窗透明度</string>
+    <string name="controller_alpha_value">%1$.0f%%</string>
     <string name="config_summary_title">当前配置摘要</string>
-    <string name="config_summary_template">当前为单点点击模式。目标点位：%1$s\n每次点击后等待：%2$d 到 %3$d 毫秒\n总点击次数：%4$s</string>
-    <string name="config_summary_point_selected">(%1$d, %2$d)</string>
-    <string name="config_summary_point_missing">未选择</string>
-    <string name="config_summary_repeat_infinite">无限次（直到手动停止）</string>
-    <string name="config_summary_repeat_finite">%1$d 次</string>
-    <string name="config_summary_invalid">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和点击次数不能留空。点击点位请通过悬浮控制器上的 + 添加。</string>
+    <string name="config_summary_template">多点轮询 · %1$d 个点位\n每次点击后等待：%2$d-%3$d 毫秒\n点击轮数：%4$s</string>
+    <string name="config_summary_repeat_infinite">无限（直到手动停止）</string>
+    <string name="config_summary_repeat_finite">%1$d 轮</string>
+    <string name="config_summary_invalid">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和轮数不能留空。</string>
     <string name="interval_adjusted_note">你输入的基础间隔低于 100 毫秒，开始时会自动按 100 毫秒处理。</string>
+
     <string name="start_clicking">开始点击</string>
     <string name="stop_clicking">停止点击</string>
-    <string name="close_controller">关闭悬浮控制器</string>
-    <string name="usage_note">使用说明：点击“打开悬浮控制器”后，侧边会出现常驻悬浮球。展开后可使用加号取点、删除按钮移除点位、播放按钮开始点击、暂停按钮停止点击。控制器收起到侧边时，半透明点位标记会自动隐藏。</string>
+    <string name="usage_note">使用说明：打开悬浮控制器后，侧边会出现可拖动的悬浮球，拖动它可调整位置。展开控制器：+ 连续添加点位、DEL 删除最后一个点位、GO 开始点击、STOP 停止。点击进行时，正在点击的点位会闪烁高亮。</string>
+
     <string name="overlay_permission_required">需要先授予悬浮窗权限。</string>
     <string name="overlay_started">悬浮控制器已显示，可在任意应用中使用。</string>
-    <string name="overlay_started_pick">悬浮控制器已显示，请直接点击目标位置完成取点。</string>
+    <string name="overlay_started_pick">悬浮控制器已显示，请点击屏幕添加点位。</string>
     <string name="overlay_closed">悬浮控制器已关闭。</string>
     <string name="accessibility_permission_required">需要先开启 AutoTapper 无障碍服务。</string>
-    <string name="point_required">请先通过悬浮控制器上的 + 选择点击位置。</string>
-    <string name="invalid_number_input">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和点击次数不能留空。</string>
+    <string name="point_required">请先通过悬浮控制器上的 + 添加点击位置。</string>
+    <string name="invalid_number_input">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和轮数不能留空。</string>
     <string name="start_command_sent">开始指令已发送。</string>
     <string name="stop_command_sent">停止指令已发送。</string>
-    <string name="point_selected_toast">已记录点位：(%1$d, %2$d)</string>
-    <string name="point_cleared_toast">已删除点击点位。</string>
-    <string name="overlay_title">点击屏幕任意位置设置新的点击点</string>
-    <string name="overlay_hint">当前是全局取点模式。轻触目标位置即可更新单点坐标；完成后会显示一个半透明橘色标记。 </string>
-    <string name="cancel_capture">取消取点</string>
-    <string name="accessibility_service_description">用于在任意应用中执行自动点击手势。启用后只会在你手动点击“开始点击”或悬浮控制器上的 GO 时工作。</string>
+
+    <string name="update_checking">正在检查更新…</string>
+    <string name="update_latest">当前已是最新版本。</string>
+    <string name="update_check_failed">检查更新失败，请稍后重试。</string>
+    <string name="update_open_failed">无法打开下载页面。</string>
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_dialog_message">当前版本：v%1$s\n最新版本：v%2$s</string>
+    <string name="update_dialog_notes_title">更新说明</string>
+    <string name="update_download">立即下载</string>
+    <string name="update_ignore">忽略此版本</string>
+    <string name="update_later">稍后再说</string>
+    <string name="update_channel_name">更新提醒</string>
+    <string name="update_notification_title">AutoTapper 发现新版本 v%1$s</string>
+    <string name="update_notification_text">点击查看并下载新版本。</string>
+
+    <string name="point_added_toast">已添加点位：(%1$d, %2$d)</string>
+    <string name="point_removed_toast">已删除最后一个点位。</string>
+    <string name="no_point_to_delete_toast">当前没有可删除的点位。</string>
+    <string name="picking_finished_toast">已保存，当前共 %1$d 个点位。</string>
+    <string name="picking_cancelled_toast">已取消本次取点。</string>
+
+    <string name="overlay_title">点击屏幕添加点击点</string>
+    <string name="overlay_hint">每轻触一次屏幕就记录一个点位，可连续添加多个。</string>
+    <string name="picker_counter_template">已添加 %1$d 个点位</string>
+    <string name="finish_capture">完成</string>
+    <string name="cancel_capture">取消</string>
+
+    <string name="accessibility_service_description">用于在任意应用中执行自动点击手势。启用后只会在你手动点击"开始点击"或悬浮控制器上的 GO 时工作。</string>
     <string name="accessibility_ready">AutoTapper 无障碍服务已连接。</string>
     <string name="click_started">自动点击已启动。</string>
     <string name="click_stopped">自动点击已停止。</string>
-    <string name="click_completed">自动点击完成，共执行 %1$d 次。</string>
+    <string name="click_completed">自动点击完成，共执行 %1$d 轮。</string>
     <string name="click_cancelled">手势被系统取消，已停止自动点击。</string>
     <string name="click_dispatch_failed">系统拒绝执行点击手势，请检查目标界面状态。</string>
+
     <string name="overlay_notification_channel">AutoTapper 悬浮控制器</string>
     <string name="overlay_notification_title">AutoTapper 悬浮控制器运行中</string>
     <string name="overlay_notification_idle">控制器已就绪，可在任意应用中展开使用。</string>
@@ -63,18 +92,19 @@
     <string name="overlay_notification_stop">关闭控制器</string>
     <string name="overlay_collapse_label">收起</string>
     <string name="overlay_controller_title">悬浮控制器</string>
-    <string name="overlay_add_button_desc">添加点击点</string>
-    <string name="overlay_clear_button_desc">删除点击点</string>
+    <string name="overlay_add_button_desc">添加点位</string>
+    <string name="overlay_clear_button_desc">删除点位</string>
     <string name="overlay_play_button_desc">开始点击</string>
     <string name="overlay_stop_button_desc">停止点击</string>
     <string name="overlay_close_button_desc">关闭悬浮控制器</string>
     <string name="overlay_handle_idle">AT</string>
     <string name="overlay_handle_running">RUN</string>
-    <string name="overlay_point_template">(%1$d, %2$d)</string>
-    <string name="overlay_point_missing">未设置点击点</string>
-    <string name="overlay_repeat_infinite">无限次</string>
-    <string name="overlay_repeat_finite">%1$d 次</string>
+    <string name="overlay_points_template">%1$d 个：%2$s</string>
+    <string name="overlay_points_more">等 %1$d 个</string>
+    <string name="overlay_point_missing">未设置点位</string>
+    <string name="overlay_repeat_infinite">无限</string>
+    <string name="overlay_repeat_finite">%1$d 轮</string>
     <string name="overlay_state_running">运行中</string>
     <string name="overlay_state_idle">待命</string>
-    <string name="overlay_status_template">状态：%1$s\n点位：%2$s\n间隔：%3$d-%4$d ms\n次数：%5$s</string>
+    <string name="overlay_status_template">状态：%1$s · 间隔 %2$d-%3$d ms · 轮数：%4$s</string>
 </resources>
