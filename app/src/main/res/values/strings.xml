@@ -34,7 +34,7 @@
     <string name="start_clicking">Start Clicking</string>
     <string name="stop_clicking">Stop Clicking</string>
     <string name="close_controller">Close Floating Controller</string>
-    <string name="usage_note">Instructions: After tapping "Open Floating Controller", a persistent floating ball appears on the side. Expand it to use + to pick a point, delete button to remove point, play button to start clicking, pause button to stop. When collapsed to the side, translucent point markers are automatically hidden.</string>
+    <string name="usage_note">Instructions: After tapping \"Open Floating Controller\", a persistent floating ball appears on the side. Expand it to use + to pick a point, delete button to remove point, play button to start clicking, pause button to stop. When collapsed to the side, translucent point markers are automatically hidden.</string>
     <string name="overlay_permission_required">Overlay permission must be granted first.</string>
     <string name="overlay_started">Floating controller displayed, usable in any app.</string>
     <string name="overlay_started_pick">Floating controller displayed. Tap the target position directly to pick a point.</string>
@@ -49,7 +49,7 @@
     <string name="overlay_title">Tap anywhere on screen to set a new click point</string>
     <string name="overlay_hint">Global point-pick mode active. Tap the target location to update the single-point coordinate; a translucent orange marker will appear after completion.</string>
     <string name="cancel_capture">Cancel Pick</string>
-    <string name="accessibility_service_description">Used to perform automatic click gestures in any app. Only works when you manually tap "Start Clicking" or the GO button on the floating controller.</string>
+    <string name="accessibility_service_description">Used to perform automatic click gestures in any app. Only works when you manually tap \"Start Clicking\" or the GO button on the floating controller.</string>
     <string name="accessibility_ready">AutoTapper accessibility service connected.</string>
     <string name="click_started">Auto clicking started.</string>
     <string name="click_stopped">Auto clicking stopped.</string>

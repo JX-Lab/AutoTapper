@@ -1,5 +1,7 @@
 # AutoTapper
 
+English | [中文](README.md)
+
 AutoTapper is an Android auto-tapping tool.
 
 It performs tap gestures via accessibility services, using a floating controller to select, start, and stop taps in any application.
@@ -108,7 +110,7 @@ Indicates the minimum waiting time between two clicks, in milliseconds.
 
 - `1000` milliseconds = `1` second
 
-- It is recommended to try values ​​between `300` and `800` first.
+- It is recommended to try values between `300` and `800` first.
 
 - If less than `100` is entered, it will be processed as `100` milliseconds.
 
