@@ -1,5 +1,7 @@
 # AutoTapper
 
+[English](README_EN.md) | 中文
+
 AutoTapper 是一个 Android 自动连点工具。  
 它通过无障碍服务执行点击手势，通过悬浮控制器在任意应用中完成取点、开始点击和停止点击。
 
