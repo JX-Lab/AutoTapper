@@ -1,157 +1,73 @@
-# AutoTapper
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="AutoTapper, an Android auto-tapping tool that records points with a floating controller and taps multiple positions in sequence.">
+</p>
 
 English | [中文](README.md)
 
-AutoTapper is an Android auto-tapping tool.
+## What is AutoTapper?
 
-It performs tap gestures via accessibility services, using a floating controller to select, start, and stop taps in any application.
+AutoTapper is an Android auto-tapping tool. It performs tap gestures through an accessibility service and uses a floating controller to record points, start tapping, and stop tapping in any app.
 
-## What it's suitable for
+Unlike single-point auto clickers, AutoTapper can tap multiple positions in sequence for workflows that repeat across several parts of the screen.
 
-- Continuous tapping at a fixed location
+## Features
 
-- Quickly start or stop auto-tapping in any application
+- **Ordered multi-point tapping:** cycles through saved points and highlights the active point.
+- **Floating controller:** a draggable side handle with `+`, `DEL`, `GO`, and `STOP` actions.
+- **On-screen point markers:** translucent orange markers show saved positions.
+- **Flexible timing:** base interval, random extra delay, and finite or infinite rounds.
+- **Update checks:** checks the latest GitHub release and displays an update alert.
+- **Point management:** view and delete individual points; previous single-point data is migrated automatically.
 
-- Temporarily readjust tap locations
+## Quick start
 
-- Basic auto-tapping with simple configuration
+1. Download and install the APK from [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest).
+2. Open the app and grant overlay and accessibility permissions.
+3. Select **Open Floating Controller**, tap the screen to add points, and finish point selection.
+4. Expand the side controller and press `GO`. Press `STOP` when you are done.
 
-## Currently supported
+<p align="center">
+  <img src="./assets/readme/workflow.svg" width="100%" alt="AutoTapper workflow: select points, configure timing, start, tap in sequence, and check for updates.">
+</p>
 
-- Single-point continuous tapping
+## How it works
 
-- Floating controller permanently displayed on the side
+1. **Select points:** each screen tap is saved as one tap position.
+2. **Configure:** choose a base interval, optional random extra delay, and the number of rounds. A value of `0` runs until stopped.
+3. **Start:** press `GO`; the accessibility service sends a tap gesture to each saved point in order.
+4. **Repeat:** the sequence continues and the active point pulses on screen.
+5. **Update:** the app checks the latest GitHub release and shows an alert when a newer version is available.
 
-- `+` Add or reselect tap point
+### Tap settings
 
-- `DEL` Delete the current tap point
+| Setting | Meaning | Recommendation |
+| --- | --- | --- |
+| Base interval | Minimum milliseconds between taps | Start with 300–800; values below 100 are raised to 100 |
+| Random extra delay | Random wait from 0 to this value after the base interval | Use 0 for a fixed rhythm |
+| Rounds | Complete passes through every saved point | 1 taps each point once; 0 runs indefinitely |
 
-- `GO` Start tapping
+## Floating controller
 
-- `STOP` Stop tapping
+The handle starts at the edge of the screen and can be dragged.
 
-- Semi-transparent orange tap marker
+- `+`: add one or more tap points
+- `DEL`: remove the last point
+- `GO`: start tapping
+- `STOP`: stop tapping
 
-- Basic interval
+Point markers are visible while the controller is expanded. The active marker pulses during tapping, and all markers are hidden when the controller is collapsed.
 
-- Randomly added delay
+## Safety notes
 
-- Fixed number of taps / Unlimited number of taps
+- Enabling accessibility does not start tapping. AutoTapper only acts after you press `GO` or **Start Tapping**.
+- Use it only in situations where automated input is allowed and understood by everyone affected.
+- Test settings on a non-critical screen before using them in a real workflow.
 
-## Currently not supported
+## Known limitations
 
-- Multi-point alternating tapping
+- Swipe gestures are not supported.
+- Complex action sequences are not supported.
 
-- Swipe gestures
+## Changelog
 
-- Complex motion programming
-
-## First-time use
-
-1. Install and open AutoTapper.
-
-2. Click "Grant floating window permission".
-
-3. Click “Enable Accessibility Service” and enable AutoTapper in system settings.
-
-4. Return to the app and configure click settings.
-
-5. Click “Open Floating Controller”.
-
-If there is no click point yet, the app will directly enter click mode.
-
-## Basic Usage Flow
-
-1. Open the floating controller.
-
-2. Click `+`.
-
-3. Tap once at the target location to record the click point.
-
-4. A semi-transparent orange dot will appear on the screen, indicating the current click location.
-
-5. Enter the app you actually need to interact with.
-
-6. Expand the side floating controller.
-
-7. Click `GO` to start automatic clicking.
-
-8. To stop, click `STOP`.
-
-## Floating Controller Explanation
-
-The floating controller is stored on the side of the screen by default.
-
-- `+`: Add or reselect a click point
-
-- `DEL`: Delete the current click point
-
-- `GO`: Start automatic clicking
-
-- `STOP`: Stop automatic clicking
-
-When the controller is expanded:
-
-- If a click point has been set, a semi-transparent orange dot will be displayed.
-
-- This dot will blink while clicking is in progress.
-
-When the controller is collapsed:
-
-- The dot marker will automatically hide.
-
-- It will not continuously obscure screen content.
-
-## Click Configuration Instructions
-
-### Basic Interval
-
-Indicates the minimum waiting time between two clicks, in milliseconds.
-
-- `1000` milliseconds = `1` second
-
-- It is recommended to try values between `300` and `800` first.
-
-- If less than `100` is entered, it will be processed as `100` milliseconds.
-
-### Random Additional Delay
-
-Indicates an additional random delay beyond the basic interval.
-
-For example:
-
-- Base interval = `400`
-
-- Random additional delay = `80`
-
-Then the actual waiting time after each click will vary between `400` and `480` milliseconds.
-
-If you enter `0`, it means a fixed clicking rhythm with no random variation.
-
-### Number of Clicks
-
-- Enter `1`: Click only once
-
-- Enter `10`: Click 10 times
-
-- Enter `0`: Click continuously until manually stopped
-
-## Usage Suggestions
-
-- When using it for the first time, test the parameters on a less important interface first.
-
-- If the point is off, delete it directly with `DEL`, then use `+` to re-select the point.
-
-- If the clicking is too fast, increase the base interval first.
-
-- To make the rhythm less rigid, you can appropriately increase the random additional delay.
-
-## Usage Reminders
-
-- AutoTapper will not automatically click just because you have enabled accessibility services.
-
-- It will only actually execute when you manually click `GO` or "Start Clicking" on the main interface.
-
-- Please only use it in scenarios where you are clearly aware of and allow it.
-
-- It is not recommended to use it for behaviors that violate platform rules, circumvent risk control, or affect the services of others.
+See [CHANGELOG.md](./CHANGELOG.md) for the complete release history.
