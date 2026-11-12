@@ -4,47 +4,51 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.widget.Button
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doAfterTextChanged
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.slider.Slider
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var tvPermissionState: TextView
-    private lateinit var tvSelectedPoint: TextView
+    private lateinit var dotOverlay: View
+    private lateinit var dotAccessibility: View
+    private lateinit var tvOverlayState: TextView
+    private lateinit var tvAccessibilityState: TextView
+    private lateinit var rvPoints: RecyclerView
+    private lateinit var tvPointsEmpty: TextView
+    private lateinit var tvPointsCount: TextView
     private lateinit var tvConfigSummary: TextView
+    private lateinit var tvVersion: TextView
     private lateinit var etIntervalMs: EditText
     private lateinit var etRandomExtraMs: EditText
     private lateinit var etRepeatCount: EditText
+    private lateinit var sliderControllerAlpha: Slider
+    private lateinit var tvControllerAlphaValue: TextView
 
     private var pointReceiverRegistered = false
-    private var selectedX = -1
-    private var selectedY = -1
+    private var isCheckingUpdate = false
+    private var points: List<TapPoint> = emptyList()
+    private lateinit var pointsAdapter: PointListAdapter
 
     private val pointReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action != AutoTapperConfig.ACTION_POINT_SELECTED) {
-                return
-            }
-
-            val x = intent.getIntExtra(AutoTapperConfig.EXTRA_TAP_X, -1)
-            val y = intent.getIntExtra(AutoTapperConfig.EXTRA_TAP_Y, -1)
-            updateSelectedPoint(x, y)
-            if (x >= 0 && y >= 0) {
-                Toast.makeText(
-                    this@MainActivity,
-                    getString(R.string.point_selected_toast, x, y),
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                Toast.makeText(this@MainActivity, R.string.point_cleared_toast, Toast.LENGTH_SHORT)
-                    .show()
+            when (intent?.action) {
+                AutoTapperConfig.ACTION_POINT_SELECTED -> loadAndShowPoints()
+                AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED -> refreshControllerAlpha()
             }
         }
     }
@@ -53,34 +57,50 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        tvPermissionState = findViewById(R.id.tv_permission_state)
-        tvSelectedPoint = findViewById(R.id.tv_selected_point)
+        dotOverlay = findViewById(R.id.dot_overlay)
+        dotAccessibility = findViewById(R.id.dot_accessibility)
+        tvOverlayState = findViewById(R.id.tv_overlay_state)
+        tvAccessibilityState = findViewById(R.id.tv_accessibility_state)
+        rvPoints = findViewById(R.id.rv_points)
+        tvPointsEmpty = findViewById(R.id.tv_points_empty)
+        tvPointsCount = findViewById(R.id.tv_points_count)
         tvConfigSummary = findViewById(R.id.tv_config_summary)
+        tvVersion = findViewById(R.id.tv_version)
         etIntervalMs = findViewById(R.id.et_interval_ms)
         etRandomExtraMs = findViewById(R.id.et_random_extra_ms)
         etRepeatCount = findViewById(R.id.et_repeat_count)
+        sliderControllerAlpha = findViewById(R.id.slider_controller_alpha)
+        tvControllerAlphaValue = findViewById(R.id.tv_controller_alpha_value)
 
-        findViewById<Button>(R.id.btn_grant_overlay).setOnClickListener {
+        pointsAdapter = PointListAdapter { index -> deletePoint(index) }
+        rvPoints.layoutManager = LinearLayoutManager(this)
+        rvPoints.adapter = pointsAdapter
+        rvPoints.itemAnimator = DefaultItemAnimator()
+
+        findViewById<View>(R.id.btn_grant_overlay).setOnClickListener {
             PermissionUtils.requestOverlayPermission(this)
         }
-        findViewById<Button>(R.id.btn_grant_accessibility).setOnClickListener {
+        findViewById<View>(R.id.btn_grant_accessibility).setOnClickListener {
             PermissionUtils.requestAccessibilityPermission(this)
         }
-        findViewById<Button>(R.id.btn_pick_point).setOnClickListener {
+        findViewById<View>(R.id.btn_open_controller).setOnClickListener {
             openFloatingController()
         }
-        findViewById<Button>(R.id.btn_close_controller).setOnClickListener {
-            closeFloatingController()
+        findViewById<View>(R.id.btn_check_update).setOnClickListener {
+            startUpdateCheck(silent = false)
         }
-        findViewById<Button>(R.id.btn_start).setOnClickListener {
-            startAutoTap()
+
+        sliderControllerAlpha.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                AutoTapperConfig.saveControllerAlpha(this, value)
+                tvControllerAlphaValue.text = getString(R.string.controller_alpha_value, value * 100)
+                sendBroadcast(
+                    Intent(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED).setPackage(packageName)
+                )
+            }
         }
-        findViewById<Button>(R.id.btn_stop).setOnClickListener {
-            stopAutoTap()
-        }
-        findViewById<Button>(R.id.btn_refresh_status).setOnClickListener {
-            updateStatus()
-        }
+
+        tvVersion.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
 
         etIntervalMs.doAfterTextChanged { updateConfigSummary() }
         etRandomExtraMs.doAfterTextChanged { updateConfigSummary() }
@@ -88,6 +108,7 @@ class MainActivity : AppCompatActivity() {
 
         loadSavedConfig()
         updateStatus()
+        startUpdateCheck(silent = true)
     }
 
     override fun onStart() {
@@ -113,40 +134,68 @@ class MainActivity : AppCompatActivity() {
         )
         etRepeatCount.setText(prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).toString())
 
-        val savedX = prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1)
-        val savedY = prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1)
-        updateSelectedPoint(savedX, savedY)
+        val alpha = AutoTapperConfig.getControllerAlpha(this)
+        sliderControllerAlpha.value = alpha
+        tvControllerAlphaValue.text = getString(R.string.controller_alpha_value, alpha * 100)
+    }
+
+    private fun refreshControllerAlpha() {
+        val alpha = AutoTapperConfig.getControllerAlpha(this)
+        sliderControllerAlpha.value = alpha
+        tvControllerAlphaValue.text = getString(R.string.controller_alpha_value, alpha * 100)
     }
 
     private fun updateStatus() {
-        val overlayGranted = PermissionUtils.isOverlayPermissionGranted(this)
-        val accessibilityEnabled =
+        updatePermissionRow(
+            dotOverlay,
+            tvOverlayState,
+            R.string.overlay_permission_state,
+            PermissionUtils.isOverlayPermissionGranted(this)
+        )
+        updatePermissionRow(
+            dotAccessibility,
+            tvAccessibilityState,
+            R.string.accessibility_permission_state,
             PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)
-
-        tvPermissionState.text = getString(
-            R.string.permission_state_template,
-            if (overlayGranted) getString(R.string.permission_granted)
-            else getString(R.string.permission_missing),
-            if (accessibilityEnabled) getString(R.string.permission_granted)
-            else getString(R.string.permission_missing)
         )
-
-        val prefs = AutoTapperConfig.prefs(this)
-        updateSelectedPoint(
-            prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1),
-            prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1)
-        )
+        loadAndShowPoints()
     }
 
-    private fun updateSelectedPoint(x: Int, y: Int) {
-        selectedX = x
-        selectedY = y
-        tvSelectedPoint.text = if (x >= 0 && y >= 0) {
-            getString(R.string.selected_point_template, x, y)
-        } else {
-            getString(R.string.point_not_selected)
+    private fun updatePermissionRow(dot: View, textView: TextView, templateRes: Int, granted: Boolean) {
+        textView.text = getString(
+            templateRes,
+            getString(if (granted) R.string.permission_granted else R.string.permission_missing)
+        )
+        dot.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor(if (granted) "#16A34A" else "#DC2626"))
         }
+    }
+
+    private fun loadAndShowPoints() {
+        points = AutoTapperConfig.loadPoints(this)
+        pointsAdapter.submitPoints(points)
+        val empty = points.isEmpty()
+        tvPointsEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+        rvPoints.visibility = if (empty) View.GONE else View.VISIBLE
+        tvPointsCount.text = getString(R.string.points_count_badge, points.size)
         updateConfigSummary()
+    }
+
+    private fun deletePoint(index: Int) {
+        val current = AutoTapperConfig.loadPoints(this)
+        if (index !in current.indices) {
+            return
+        }
+        AutoTapperConfig.removePointAt(this, index)
+        points = AutoTapperConfig.loadPoints(this)
+        pointsAdapter.removeItem(index)
+        tvPointsEmpty.visibility = if (points.isEmpty()) View.VISIBLE else View.GONE
+        rvPoints.visibility = if (points.isEmpty()) View.GONE else View.VISIBLE
+        tvPointsCount.text = getString(R.string.points_count_badge, points.size)
+        updateConfigSummary()
+        Toast.makeText(this, getString(R.string.point_deleted_toast, index + 1), Toast.LENGTH_SHORT)
+            .show()
     }
 
     private fun openFloatingController() {
@@ -156,66 +205,115 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val prefs = AutoTapperConfig.prefs(this)
-        val hasSavedPoint =
-            prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1) >= 0 &&
-                prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1) >= 0
-
+        val hasPoints = AutoTapperConfig.hasPoints(this)
         val intent = Intent(this, OverlayService::class.java).apply {
             action = AutoTapperConfig.ACTION_SHOW_CONTROLLER
-            putExtra(AutoTapperConfig.EXTRA_START_PICKING, !hasSavedPoint)
+            putExtra(AutoTapperConfig.EXTRA_START_PICKING, !hasPoints)
         }
         ContextCompat.startForegroundService(this, intent)
         Toast.makeText(
             this,
-            if (hasSavedPoint) R.string.overlay_started else R.string.overlay_started_pick,
+            if (hasPoints) R.string.overlay_started else R.string.overlay_started_pick,
             Toast.LENGTH_SHORT
         ).show()
     }
 
-    private fun closeFloatingController() {
-        stopService(Intent(this, OverlayService::class.java))
-        Toast.makeText(this, R.string.overlay_closed, Toast.LENGTH_SHORT).show()
+    private fun startUpdateCheck(silent: Boolean) {
+        if (isCheckingUpdate) {
+            return
+        }
+        isCheckingUpdate = true
+        if (!silent) {
+            Toast.makeText(this, R.string.update_checking, Toast.LENGTH_SHORT).show()
+        }
+        UpdateChecker.checkForUpdate { info ->
+            runOnUiThread {
+                isCheckingUpdate = false
+                handleUpdateResult(info, silent)
+            }
+        }
     }
 
-    private fun startAutoTap() {
-        if (!PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)) {
-            Toast.makeText(this, R.string.accessibility_permission_required, Toast.LENGTH_SHORT)
-                .show()
-            PermissionUtils.requestAccessibilityPermission(this)
+    private fun handleUpdateResult(info: UpdateChecker.UpdateInfo?, silent: Boolean) {
+        if (info == null) {
+            if (!silent) {
+                Toast.makeText(this, R.string.update_check_failed, Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
+        if (!UpdateChecker.isNewer(info.latestVersion, BuildConfig.VERSION_NAME)) {
+            if (!silent) {
+                Toast.makeText(this, R.string.update_latest, Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
         val prefs = AutoTapperConfig.prefs(this)
-        val x = prefs.getInt(AutoTapperConfig.KEY_TAP_X, -1)
-        val y = prefs.getInt(AutoTapperConfig.KEY_TAP_Y, -1)
-        if (x < 0 || y < 0) {
-            Toast.makeText(this, R.string.point_required, Toast.LENGTH_SHORT).show()
+        if (prefs.getString(AutoTapperConfig.KEY_UPDATE_IGNORED_VERSION, null) ==
+            info.latestVersion
+        ) {
             return
         }
 
-        val intervalMs = etIntervalMs.text.toString().toLongOrNull()?.coerceAtLeast(100L)
-        val randomExtraMs = etRandomExtraMs.text.toString().toLongOrNull()?.coerceAtLeast(0L)
-        val repeatCount = etRepeatCount.text.toString().toIntOrNull()?.coerceAtLeast(0)
-
-        if (intervalMs == null || randomExtraMs == null || repeatCount == null) {
-            Toast.makeText(this, R.string.invalid_number_input, Toast.LENGTH_SHORT).show()
+        val alreadyNotified = prefs.getString(AutoTapperConfig.KEY_UPDATE_NOTIFIED_VERSION, null) ==
+            info.latestVersion
+        if (silent && alreadyNotified) {
             return
         }
 
-        prefs.edit()
-            .putLong(AutoTapperConfig.KEY_INTERVAL_MS, intervalMs)
-            .putLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, randomExtraMs)
-            .putInt(AutoTapperConfig.KEY_REPEAT_COUNT, repeatCount)
+        prefs.edit().putString(AutoTapperConfig.KEY_UPDATE_NOTIFIED_VERSION, info.latestVersion)
             .apply()
-
-        sendBroadcast(Intent(AutoTapperConfig.ACTION_START_CLICKING).setPackage(packageName))
-        Toast.makeText(this, R.string.start_command_sent, Toast.LENGTH_SHORT).show()
+        UpdateNotifier.notify(this, info)
+        if (!isFinishing && !isDestroyed) {
+            showUpdateDialog(info)
+        }
     }
 
-    private fun stopAutoTap() {
-        sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
-        Toast.makeText(this, R.string.stop_command_sent, Toast.LENGTH_SHORT).show()
+    private fun showUpdateDialog(info: UpdateChecker.UpdateInfo) {
+        val message = buildString {
+            append(
+                getString(
+                    R.string.update_dialog_message,
+                    BuildConfig.VERSION_NAME,
+                    info.latestVersion
+                )
+            )
+            val notes = info.notes?.lineSequence()
+                ?.filter { it.isNotBlank() }
+                ?.joinToString("\n")
+                ?.take(400)
+            if (!notes.isNullOrBlank()) {
+                append("\n\n").append(getString(R.string.update_dialog_notes_title))
+                    .append("\n").append(notes)
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.update_dialog_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.update_download) { _, _ ->
+                openUrl(info.downloadUrl)
+            }
+            .setNeutralButton(R.string.update_ignore) { _, _ ->
+                AutoTapperConfig.prefs(this).edit()
+                    .putString(AutoTapperConfig.KEY_UPDATE_IGNORED_VERSION, info.latestVersion)
+                    .apply()
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
+    }
+
+    private fun openUrl(url: String) {
+        if (!UpdateChecker.isSafeServerUrl(url)) {
+            Toast.makeText(this, R.string.update_open_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.update_open_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun updateConfigSummary() {
@@ -232,12 +330,6 @@ class MainActivity : AppCompatActivity() {
         val randomExtraMs = randomExtraInput.coerceAtLeast(0L)
         val repeatCount = repeatCountInput.coerceAtLeast(0)
 
-        val pointSummary = if (selectedX >= 0 && selectedY >= 0) {
-            getString(R.string.config_summary_point_selected, selectedX, selectedY)
-        } else {
-            getString(R.string.config_summary_point_missing)
-        }
-
         val repeatSummary = if (repeatCount == 0) {
             getString(R.string.config_summary_repeat_infinite)
         } else {
@@ -246,7 +338,7 @@ class MainActivity : AppCompatActivity() {
 
         val summaryText = getString(
             R.string.config_summary_template,
-            pointSummary,
+            points.size,
             intervalMs,
             intervalMs + randomExtraMs,
             repeatSummary
@@ -264,7 +356,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val filter = IntentFilter(AutoTapperConfig.ACTION_POINT_SELECTED)
+        val filter = IntentFilter().apply {
+            addAction(AutoTapperConfig.ACTION_POINT_SELECTED)
+            addAction(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(pointReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {

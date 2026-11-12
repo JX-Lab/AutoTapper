@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 108 108" role="img" aria-labelledby="title desc">
+  <title id="title">AutoTapper app icon</title>
+  <desc id="desc">Three tap points connected in an orange loop on a dark rounded square; the third point is active.</desc>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#182338"/>
+      <stop offset="1" stop-color="#101828"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#FF8A3D" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="6" y="6" width="96" height="96" rx="18" fill="url(#tile)"/>
+  <path d="M27 73C34 56 43 43 56 39c13-4 26 4 26 18 0 15-13 24-28 23-12-1-21-5-27-7" fill="none" stroke="#FF9A4D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#101828" stroke="#FF7A1A" stroke-width="3">
+    <circle cx="27" cy="73" r="7"/>
+    <circle cx="56" cy="39" r="7"/>
+  </g>
+  <g fill="#FFB067">
+    <circle cx="27" cy="73" r="2.5"/>
+    <circle cx="56" cy="39" r="2.5"/>
+  </g>
+  <circle cx="82" cy="57" r="16" fill="url(#glow)"/>
+  <circle cx="82" cy="57" r="13" fill="#2B211D" stroke="#FF7A1A" stroke-opacity=".42" stroke-width="2"/>
+  <circle cx="82" cy="57" r="8" fill="#101828" stroke="#FF8A3D" stroke-width="3"/>
+  <circle cx="82" cy="57" r="3" fill="#fff"/>
+  <path d="m46 75 8 5-7 6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
