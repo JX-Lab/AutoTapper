@@ -1,10 +1,12 @@
 <resources>
     <string name="app_name">AutoTapper</string>
+    <string name="screen_eyebrow">AUTOMATION CONSOLE</string>
     <string name="screen_title">AutoTapper Auto Clicker</string>
     <string name="screen_subtitle">Tap multiple points in sequence using a draggable floating controller in any app.</string>
     <string name="version_label">Version v%1$s</string>
     <string name="check_update">Check for updates</string>
     <string name="status_title">Permission Status</string>
+    <string name="status_subtitle">Both services must be ready before tapping.</string>
     <string name="overlay_permission_state">Overlay permission: %1$s</string>
     <string name="accessibility_permission_state">Accessibility service: %1$s</string>
     <string name="permission_granted">Granted</string>
@@ -12,6 +14,7 @@
     <string name="grant_permission_button">Open settings</string>
 
     <string name="points_title">Tap Points</string>
+    <string name="points_subtitle">The controller taps these positions from top to bottom.</string>
     <string name="points_count_badge">%1$d points</string>
     <string name="points_empty">No points yet. Open the floating controller and tap + to add positions.</string>
     <string name="open_controller">Open Floating Controller</string>
@@ -21,6 +24,7 @@
     <string name="point_deleted_toast">Point %1$d deleted.</string>
 
     <string name="config_title">Tap Configuration</string>
+    <string name="config_subtitle">Tune the rhythm once; the floating controller uses it instantly.</string>
     <string name="config_intro">Multi-point mode taps each point in order. Actual wait time = base interval + a random value up to the extra delay.</string>
     <string name="interval_label">Base interval</string>
     <string name="interval_help">Milliseconds between taps. Try a value from 300 to 800 first.</string>
@@ -40,6 +44,7 @@
     <string name="start_clicking">Start Tapping</string>
     <string name="stop_clicking">Stop Tapping</string>
     <string name="usage_note">After opening the controller, drag the side handle to reposition it. Expand it to add points with +, remove the last point with DEL, start with GO, and stop with STOP. The active point pulses while tapping.</string>
+    <string name="usage_title">QUICK GUIDE</string>
 
     <string name="overlay_permission_required">Grant overlay permission first.</string>
     <string name="overlay_started">The floating controller is ready in any app.</string>
@@ -92,6 +97,7 @@
     <string name="overlay_notification_stop">Close Controller</string>
     <string name="overlay_collapse_label">Collapse</string>
     <string name="overlay_controller_title">Floating Controller</string>
+    <string name="overlay_eyebrow">AUTOTAPPER · LIVE</string>
     <string name="overlay_add_button_desc">Add tap point</string>
     <string name="overlay_clear_button_desc">Remove tap point</string>
     <string name="overlay_play_button_desc">Start tapping</string>

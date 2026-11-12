@@ -7,11 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Path
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import kotlin.random.Random
 
 class AutoClickService : AccessibilityService() {
@@ -196,12 +196,12 @@ class AutoClickService : AccessibilityService() {
             addAction(AutoTapperConfig.ACTION_START_CLICKING)
             addAction(AutoTapperConfig.ACTION_STOP_CLICKING)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(controlReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(controlReceiver, filter)
-        }
+        ContextCompat.registerReceiver(
+            this,
+            controlReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         receiverRegistered = true
     }
 

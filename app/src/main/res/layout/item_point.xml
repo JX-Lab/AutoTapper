@@ -7,26 +7,35 @@
     android:background="@drawable/bg_point_item"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="12dp"
+    android:paddingStart="10dp"
     android:paddingEnd="4dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp">
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/tv_point_index"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/Text.AutoTapper.Body"
-        android:textColor="?attr/colorPrimary"
+        android:background="@drawable/bg_badge"
+        android:gravity="center"
+        android:minWidth="56dp"
+        android:paddingStart="9dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="9dp"
+        android:paddingBottom="4dp"
+        android:textAppearance="@style/Text.AutoTapper.Caption"
+        android:textColor="@color/on_primary_container"
         android:textStyle="bold" />
 
     <TextView
         android:id="@+id/tv_point_coords"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:textAppearance="@style/Text.AutoTapper.Body" />
+        android:fontFamily="monospace"
+        android:textAppearance="@style/Text.AutoTapper.Body"
+        android:textColor="@color/text_primary" />
 
     <ImageView
         android:id="@+id/btn_point_delete"
@@ -36,6 +45,6 @@
         android:contentDescription="@string/delete_point_desc"
         android:padding="10dp"
         android:src="@drawable/ic_overlay_delete"
-        app:tint="?attr/colorOnSurface" />
+        app:tint="@color/text_secondary" />
 
 </LinearLayout>

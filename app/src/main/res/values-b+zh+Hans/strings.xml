@@ -1,10 +1,12 @@
 <resources>
     <string name="app_name">AutoTapper</string>
+    <string name="screen_eyebrow">自动点击控制台</string>
     <string name="screen_title">AutoTapper 自动连点器</string>
     <string name="screen_subtitle">支持多点击顺序轮流点击：在任意应用中通过可拖动的悬浮控制器连续取点、开始点击和停止点击。</string>
     <string name="version_label">版本 v%1$s</string>
     <string name="check_update">检查更新</string>
     <string name="status_title">权限状态</string>
+    <string name="status_subtitle">开始点击前，请确保两项服务均已就绪。</string>
     <string name="overlay_permission_state">悬浮窗权限：%1$s</string>
     <string name="accessibility_permission_state">无障碍服务：%1$s</string>
     <string name="permission_granted">已授予</string>
@@ -12,6 +14,7 @@
     <string name="grant_permission_button">去授权</string>
 
     <string name="points_title">点击点位</string>
+    <string name="points_subtitle">控制器会从上到下依次点击这些位置。</string>
     <string name="points_count_badge">%1$d 个点</string>
     <string name="points_empty">还没有点位。打开悬浮控制器，点击 + 连续添加点击位置。</string>
     <string name="open_controller">打开悬浮控制器取点</string>
@@ -21,6 +24,7 @@
     <string name="point_deleted_toast">已删除点位 %1$d。</string>
 
     <string name="config_title">点击配置</string>
+    <string name="config_subtitle">一次设定点击节奏，悬浮控制器会立即使用。</string>
     <string name="config_intro">多点模式会按点位顺序轮流点击。实际等待时间 = 基础间隔 + 0 到随机附加延迟之间的随机值。</string>
     <string name="interval_label">基础间隔</string>
     <string name="interval_help">单位毫秒，表示每次点击之间至少等待多久。建议先从 300 到 800 之间尝试。</string>
@@ -40,6 +44,7 @@
     <string name="start_clicking">开始点击</string>
     <string name="stop_clicking">停止点击</string>
     <string name="usage_note">使用说明：打开悬浮控制器后，侧边会出现可拖动的悬浮球，拖动它可调整位置。展开控制器：+ 连续添加点位、DEL 删除最后一个点位、GO 开始点击、STOP 停止。点击进行时，正在点击的点位会闪烁高亮。</string>
+    <string name="usage_title">快速提示</string>
 
     <string name="overlay_permission_required">需要先授予悬浮窗权限。</string>
     <string name="overlay_started">悬浮控制器已显示，可在任意应用中使用。</string>
@@ -92,6 +97,7 @@
     <string name="overlay_notification_stop">关闭控制器</string>
     <string name="overlay_collapse_label">收起</string>
     <string name="overlay_controller_title">悬浮控制器</string>
+    <string name="overlay_eyebrow">AUTOTAPPER · 实时控制</string>
     <string name="overlay_add_button_desc">添加点位</string>
     <string name="overlay_clear_button_desc">删除点位</string>
     <string name="overlay_play_button_desc">开始点击</string>
