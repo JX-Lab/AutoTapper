@@ -18,6 +18,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 
 class MainActivity : AppCompatActivity() {
@@ -36,9 +37,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etRepeatCount: EditText
     private lateinit var sliderControllerAlpha: Slider
     private lateinit var tvControllerAlphaValue: TextView
+    private lateinit var tvProfileName: TextView
+    private lateinit var btnProfileSave: MaterialButton
+    private lateinit var btnProfileDelete: View
 
     private var pointReceiverRegistered = false
     private var isCheckingUpdate = false
+    private var isLoadingConfig = false
     private var points: List<TapPoint> = emptyList()
     private lateinit var pointsAdapter: PointListAdapter
 
@@ -69,8 +74,14 @@ class MainActivity : AppCompatActivity() {
         etRepeatCount = findViewById(R.id.et_repeat_count)
         sliderControllerAlpha = findViewById(R.id.slider_controller_alpha)
         tvControllerAlphaValue = findViewById(R.id.tv_controller_alpha_value)
+        tvProfileName = findViewById(R.id.tv_profile_name)
+        btnProfileSave = findViewById(R.id.btn_profile_save)
+        btnProfileDelete = findViewById(R.id.btn_profile_delete)
 
-        pointsAdapter = PointListAdapter { index -> deletePoint(index) }
+        pointsAdapter = PointListAdapter(
+            onEdit = { index -> showPointEditor(index) },
+            onDelete = { index -> deletePoint(index) }
+        )
         rvPoints.layoutManager = LinearLayoutManager(this)
         rvPoints.adapter = pointsAdapter
         rvPoints.itemAnimator = DefaultItemAnimator()
@@ -87,6 +98,15 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btn_check_update).setOnClickListener {
             startUpdateCheck(silent = false)
         }
+        findViewById<View>(R.id.btn_profile_select).setOnClickListener {
+            showProfileSelector()
+        }
+        btnProfileSave.setOnClickListener {
+            showSaveProfileDialog()
+        }
+        btnProfileDelete.setOnClickListener {
+            confirmDeleteActiveProfile()
+        }
 
         sliderControllerAlpha.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
@@ -100,9 +120,9 @@ class MainActivity : AppCompatActivity() {
 
         tvVersion.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
 
-        etIntervalMs.doAfterTextChanged { updateConfigSummary() }
-        etRandomExtraMs.doAfterTextChanged { updateConfigSummary() }
-        etRepeatCount.doAfterTextChanged { updateConfigSummary() }
+        etIntervalMs.doAfterTextChanged { onBaseConfigChanged() }
+        etRandomExtraMs.doAfterTextChanged { onBaseConfigChanged() }
+        etRepeatCount.doAfterTextChanged { onBaseConfigChanged() }
 
         loadSavedConfig()
         updateStatus()
@@ -125,6 +145,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadSavedConfig() {
+        isLoadingConfig = true
         val prefs = AutoTapperConfig.prefs(this)
         etIntervalMs.setText(prefs.getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).toString())
         etRandomExtraMs.setText(
@@ -135,6 +156,9 @@ class MainActivity : AppCompatActivity() {
         val alpha = AutoTapperConfig.getControllerAlpha(this)
         sliderControllerAlpha.value = alpha
         tvControllerAlphaValue.text = getString(R.string.controller_alpha_value, alpha * 100)
+        isLoadingConfig = false
+        updateConfigSummary()
+        refreshActiveProfile()
     }
 
     private fun refreshControllerAlpha() {
@@ -157,6 +181,36 @@ class MainActivity : AppCompatActivity() {
             PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)
         )
         loadAndShowPoints()
+        refreshActiveProfile()
+    }
+
+    private fun onBaseConfigChanged() {
+        updateConfigSummary()
+        if (isLoadingConfig) return
+        val interval = etIntervalMs.text.toString().toLongOrNull() ?: return
+        val randomExtra = etRandomExtraMs.text.toString().toLongOrNull() ?: return
+        val rounds = etRepeatCount.text.toString().toIntOrNull() ?: return
+        AutoTapperConfig.saveBaseConfig(this, interval, randomExtra, rounds)
+        refreshActiveProfile()
+    }
+
+    private fun refreshActiveProfile() {
+        val active = AutoTapperConfig.getActiveProfile(this)
+        tvProfileName.text = when {
+            active == null -> getString(R.string.profile_none)
+            AutoTapperConfig.isActiveProfileModified(this) ->
+                getString(R.string.profile_modified, active.name)
+            else -> active.name
+        }
+        btnProfileSave.setText(
+            if (active != null && AutoTapperConfig.isActiveProfileModified(this)) {
+                R.string.profile_update
+            } else {
+                R.string.profile_save
+            }
+        )
+        btnProfileDelete.isEnabled = active != null
+        btnProfileDelete.alpha = if (active != null) 1f else 0.45f
     }
 
     private fun updatePermissionRow(dot: View, textView: TextView, templateRes: Int, granted: Boolean) {
@@ -183,6 +237,7 @@ class MainActivity : AppCompatActivity() {
         rvPoints.visibility = if (empty) View.GONE else View.VISIBLE
         tvPointsCount.text = getString(R.string.points_count_badge, points.size)
         updateConfigSummary()
+        refreshActiveProfile()
     }
 
     private fun deletePoint(index: Int) {
@@ -190,6 +245,7 @@ class MainActivity : AppCompatActivity() {
         if (index !in current.indices) {
             return
         }
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
         AutoTapperConfig.removePointAt(this, index)
         points = AutoTapperConfig.loadPoints(this)
         pointsAdapter.removeItem(index)
@@ -201,7 +257,193 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun showPointEditor(index: Int) {
+        val point = AutoTapperConfig.loadPoints(this).getOrNull(index) ?: return
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+        val view = layoutInflater.inflate(R.layout.dialog_point_settings, null)
+        val delayInput = view.findViewById<EditText>(R.id.et_point_delay)
+        val repeatInput = view.findViewById<EditText>(R.id.et_point_repeat)
+        val holdInput = view.findViewById<EditText>(R.id.et_point_hold)
+        delayInput.setText(point.delayMs.toString())
+        repeatInput.setText(point.repeatCount.toString())
+        holdInput.setText(point.holdDurationMs.toString())
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.edit_point_title, index + 1, point.x, point.y))
+            .setView(view)
+            .setPositiveButton(R.string.save_changes, null)
+            .setNegativeButton(R.string.cancel_capture, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val delay = delayInput.text.toString().toLongOrNull()
+                val repeat = repeatInput.text.toString().toIntOrNull()
+                val hold = holdInput.text.toString().toLongOrNull()
+                val valid = delay != null && delay >= 0L &&
+                    repeat != null && repeat in 1..AutoTapperConfig.MAX_POINT_REPEAT &&
+                    hold != null && hold in (
+                        AutoTapperConfig.MIN_HOLD_DURATION_MS..
+                            AutoTapperConfig.MAX_HOLD_DURATION_MS
+                        )
+                if (!valid) {
+                    Toast.makeText(this, R.string.point_settings_invalid, Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                AutoTapperConfig.updatePointAt(
+                    this,
+                    index,
+                    point.copy(
+                        delayMs = delay!!,
+                        repeatCount = repeat!!,
+                        holdDurationMs = hold!!
+                    )
+                )
+                loadAndShowPoints()
+                sendBroadcast(
+                    Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName)
+                )
+                Toast.makeText(
+                    this,
+                    getString(R.string.point_updated_toast, index + 1),
+                    Toast.LENGTH_SHORT
+                ).show()
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showSaveProfileDialog(onSaved: (() -> Unit)? = null) {
+        onBaseConfigChanged()
+        val view = layoutInflater.inflate(R.layout.dialog_profile_name, null)
+        val nameInput = view.findViewById<EditText>(R.id.et_profile_name)
+        nameInput.setText(AutoTapperConfig.getActiveProfile(this)?.name.orEmpty())
+        nameInput.setSelection(nameInput.text.length)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.profile_save_title)
+            .setView(view)
+            .setPositiveButton(R.string.profile_save, null)
+            .setNegativeButton(R.string.cancel_capture, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = nameInput.text.toString().trim()
+                if (name.isBlank()) {
+                    nameInput.error = getString(R.string.profile_name_hint)
+                    return@setOnClickListener
+                }
+                val existing = AutoTapperConfig.loadProfiles(this)
+                    .firstOrNull { it.name.equals(name, ignoreCase = true) }
+                val activeId = AutoTapperConfig.getActiveProfile(this)?.id
+                if (existing != null && existing.id != activeId) {
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.profile_overwrite_title)
+                        .setMessage(getString(R.string.profile_overwrite_message, existing.name))
+                        .setPositiveButton(R.string.profile_update) { _, _ ->
+                            saveProfileNow(name)
+                            onSaved?.invoke()
+                            dialog.dismiss()
+                        }
+                        .setNegativeButton(R.string.cancel_capture, null)
+                        .show()
+                } else {
+                    saveProfileNow(name)
+                    onSaved?.invoke()
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showProfileSelector() {
+        val profiles = AutoTapperConfig.loadProfiles(this)
+        if (profiles.isEmpty()) {
+            Toast.makeText(this, R.string.profile_list_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val names = profiles.map { it.name }.toTypedArray()
+        val activeId = AutoTapperConfig.getActiveProfile(this)?.id
+        val checked = profiles.indexOfFirst { it.id == activeId }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.profile_select_title)
+            .setSingleChoiceItems(names, checked) { dialog, which ->
+                val target = profiles[which]
+                val active = AutoTapperConfig.getActiveProfile(this)
+                dialog.dismiss()
+                if (active?.id == target.id) return@setSingleChoiceItems
+                if (active == null && AutoTapperConfig.loadPoints(this).isNotEmpty()) {
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.profile_unsaved_title)
+                        .setMessage(R.string.profile_unsaved_current_message)
+                        .setPositiveButton(R.string.profile_save_and_switch) { _, _ ->
+                            showSaveProfileDialog { activateProfile(target.id) }
+                        }
+                        .setNeutralButton(R.string.profile_discard_and_switch) { _, _ ->
+                            activateProfile(target.id)
+                        }
+                        .setNegativeButton(R.string.cancel_capture, null)
+                        .show()
+                } else if (active != null && AutoTapperConfig.isActiveProfileModified(this)) {
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.profile_unsaved_title)
+                        .setMessage(getString(R.string.profile_unsaved_message, active.name))
+                        .setPositiveButton(R.string.profile_save_and_switch) { _, _ ->
+                            saveProfileNow(active.name)
+                            activateProfile(target.id)
+                        }
+                        .setNeutralButton(R.string.profile_discard_and_switch) { _, _ ->
+                            activateProfile(target.id)
+                        }
+                        .setNegativeButton(R.string.cancel_capture, null)
+                        .show()
+                } else {
+                    activateProfile(target.id)
+                }
+            }
+            .setNegativeButton(R.string.cancel_capture, null)
+            .show()
+    }
+
+    private fun saveProfileNow(name: String) {
+        val profile = AutoTapperConfig.saveCurrentProfile(this, name)
+        refreshActiveProfile()
+        Toast.makeText(
+            this,
+            getString(R.string.profile_saved, profile.name),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun activateProfile(profileId: String) {
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+        val loaded = AutoTapperConfig.activateProfile(this, profileId) ?: return
+        loadSavedConfig()
+        loadAndShowPoints()
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName))
+        Toast.makeText(
+            this,
+            getString(R.string.profile_loaded, loaded.name),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun confirmDeleteActiveProfile() {
+        val profile = AutoTapperConfig.getActiveProfile(this) ?: return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.profile_delete_title)
+            .setMessage(getString(R.string.profile_delete_message, profile.name))
+            .setPositiveButton(R.string.profile_delete) { _, _ ->
+                AutoTapperConfig.deleteProfile(this, profile.id)
+                refreshActiveProfile()
+                Toast.makeText(this, R.string.profile_deleted, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(R.string.cancel_capture, null)
+            .show()
+    }
+
     private fun openFloatingController() {
+        onBaseConfigChanged()
         if (!PermissionUtils.isOverlayPermissionGranted(this)) {
             Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_SHORT).show()
             PermissionUtils.requestOverlayPermission(this)

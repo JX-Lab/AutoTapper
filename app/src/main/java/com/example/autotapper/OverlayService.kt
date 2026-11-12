@@ -32,6 +32,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.appcompat.widget.TooltipCompat
 import kotlin.math.abs
 
 class OverlayService : Service() {
@@ -43,7 +44,9 @@ class OverlayService : Service() {
     private var controllerStatusView: TextView? = null
     private var pointsTextView: TextView? = null
     private var playButtonView: ImageView? = null
+    private var addButtonView: ImageView? = null
     private var clearButtonView: ImageView? = null
+    private var stopButtonView: ImageView? = null
     private var pickerView: View? = null
     private var pickerCounterView: TextView? = null
     private val pointMarkers: MutableList<View> = mutableListOf()
@@ -51,7 +54,11 @@ class OverlayService : Service() {
 
     private var isControllerExpanded = false
     private var isClicking = false
+    private var isPaused = false
     private var currentPointIndex = -1
+    private var roundsCompleted = 0
+    private var pointRepeatProgress = 0
+    private var pendingAction = AutoTapperConfig.PENDING_NONE
     private var sessionStartCount = 0
 
     // 悬浮组件当前锚点位置（屏幕坐标，重力 TOP|START），拖动后随之更新
@@ -120,8 +127,21 @@ class OverlayService : Service() {
             when (intent?.action) {
                 AutoTapperConfig.ACTION_CLICK_STATE_CHANGED -> {
                     isClicking = intent.getBooleanExtra(AutoTapperConfig.EXTRA_IS_CLICKING, false)
+                    isPaused = intent.getBooleanExtra(AutoTapperConfig.EXTRA_IS_PAUSED, false)
                     currentPointIndex =
                         intent.getIntExtra(AutoTapperConfig.EXTRA_CURRENT_POINT_INDEX, -1)
+                    roundsCompleted = intent.getIntExtra(
+                        AutoTapperConfig.EXTRA_ROUNDS_COMPLETED,
+                        0
+                    )
+                    pointRepeatProgress = intent.getIntExtra(
+                        AutoTapperConfig.EXTRA_POINT_REPEAT_PROGRESS,
+                        0
+                    )
+                    pendingAction = intent.getIntExtra(
+                        AutoTapperConfig.EXTRA_PENDING_ACTION,
+                        AutoTapperConfig.PENDING_NONE
+                    )
                     refreshControllerState()
                     refreshMarkers()
                     refreshNotification()
@@ -194,7 +214,9 @@ class OverlayService : Service() {
         controllerStatusView = null
         pointsTextView = null
         playButtonView = null
+        addButtonView = null
         clearButtonView = null
+        stopButtonView = null
         runCatching { unregisterReceiver(serviceReceiver) }
         super.onDestroy()
     }
@@ -233,8 +255,15 @@ class OverlayService : Service() {
             .setSmallIcon(R.drawable.ic_autotapper)
             .setContentTitle(getString(R.string.overlay_notification_title))
             .setContentText(
-                if (isClicking) getString(R.string.overlay_notification_running)
-                else getString(R.string.overlay_notification_idle)
+                when {
+                    pendingAction == AutoTapperConfig.PENDING_STOP ->
+                        getString(R.string.overlay_notification_stopping)
+                    pendingAction == AutoTapperConfig.PENDING_PAUSE ->
+                        getString(R.string.overlay_notification_pause_pending)
+                    isClicking -> getString(R.string.overlay_notification_running)
+                    isPaused -> getString(R.string.overlay_notification_paused)
+                    else -> getString(R.string.overlay_notification_idle)
+                }
             )
             .setOngoing(true)
             .setContentIntent(buildOpenAppPendingIntent())
@@ -293,7 +322,9 @@ class OverlayService : Service() {
         controllerStatusView = null
         pointsTextView = null
         playButtonView = null
+        addButtonView = null
         clearButtonView = null
+        stopButtonView = null
         hideMarkers()
 
         val x = if (collapsedAnchorX >= 0) collapsedAnchorX else floatX.coerceAtLeast(0)
@@ -473,8 +504,15 @@ class OverlayService : Service() {
             iconRes = R.drawable.ic_overlay_add,
             contentDescriptionRes = R.string.overlay_add_button_desc
         ).apply {
-            setOnClickListener { showPickerOverlay() }
+            setOnClickListener {
+                if (!isClicking && !isPaused &&
+                    pendingAction == AutoTapperConfig.PENDING_NONE
+                ) {
+                    showPickerOverlay()
+                }
+            }
         }
+        addButtonView = addButton
 
         val clearButton = buildActionButton(
             iconRes = R.drawable.ic_overlay_delete,
@@ -493,11 +531,26 @@ class OverlayService : Service() {
         }
         playButtonView = playButton
 
+        val stopButton = buildActionButton(
+            iconRes = R.drawable.ic_overlay_stop,
+            contentDescriptionRes = R.string.overlay_stop_button_desc
+        ).apply {
+            setColorFilter(color(R.color.danger))
+            setOnClickListener {
+                sendBroadcast(
+                    Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName)
+                )
+            }
+        }
+        stopButtonView = stopButton
+
         buttonRow.addView(addButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(clearButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(playButton)
+        buttonRow.addView(spacerView())
+        buttonRow.addView(stopButton)
 
         val statusView = TextView(this).apply {
             setTextColor(color(R.color.text_secondary))
@@ -551,6 +604,7 @@ class OverlayService : Service() {
                 if (primary) R.drawable.bg_overlay_primary_button
                 else R.drawable.bg_circular_button
             )
+            TooltipCompat.setTooltipText(this, getString(contentDescriptionRes))
         }
 
     private fun spacerView() = View(this).apply {
@@ -647,9 +701,7 @@ class OverlayService : Service() {
     }
 
     private fun removeLastPoint() {
-        if (isClicking) {
-            sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
-        }
+        if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) return
 
         if (AutoTapperConfig.loadPoints(this).isEmpty()) {
             Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
@@ -664,8 +716,18 @@ class OverlayService : Service() {
     }
 
     private fun toggleClicking() {
+        if (pendingAction == AutoTapperConfig.PENDING_STOP) return
+        if (pendingAction == AutoTapperConfig.PENDING_PAUSE) {
+            sendBroadcast(Intent(AutoTapperConfig.ACTION_RESUME_CLICKING).setPackage(packageName))
+            return
+        }
         if (isClicking) {
-            sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+            sendBroadcast(Intent(AutoTapperConfig.ACTION_PAUSE_CLICKING).setPackage(packageName))
+            return
+        }
+
+        if (isPaused) {
+            sendBroadcast(Intent(AutoTapperConfig.ACTION_RESUME_CLICKING).setPackage(packageName))
             return
         }
 
@@ -692,6 +754,8 @@ class OverlayService : Service() {
 
     private fun refreshControllerState() {
         val hasPoint = AutoTapperConfig.hasPoints(this)
+        val sessionActive = isClicking || isPaused ||
+            pendingAction != AutoTapperConfig.PENDING_NONE
 
         collapsedHandleView?.apply {
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
@@ -702,37 +766,71 @@ class OverlayService : Service() {
 
         playButtonView?.apply {
             setImageResource(if (isClicking) R.drawable.ic_overlay_pause else R.drawable.ic_overlay_play)
+            isEnabled = pendingAction != AutoTapperConfig.PENDING_STOP
+            alpha = if (isEnabled) 1f else 0.45f
             contentDescription = getString(
-                if (isClicking) R.string.overlay_stop_button_desc
-                else R.string.overlay_play_button_desc
+                when {
+                    pendingAction == AutoTapperConfig.PENDING_PAUSE ->
+                        R.string.overlay_resume_button_desc
+                    isClicking -> R.string.overlay_pause_button_desc
+                    isPaused -> R.string.overlay_resume_button_desc
+                    else -> R.string.overlay_play_button_desc
+                }
             )
+            TooltipCompat.setTooltipText(this, contentDescription)
         }
 
-        clearButtonView?.alpha = if (hasPoint) 1f else 0.55f
+        addButtonView?.apply {
+            isEnabled = !sessionActive
+            alpha = if (isEnabled) 1f else 0.45f
+        }
+        clearButtonView?.apply {
+            isEnabled = hasPoint && !sessionActive
+            alpha = if (isEnabled) 1f else 0.45f
+        }
+        stopButtonView?.apply {
+            isEnabled = sessionActive && pendingAction != AutoTapperConfig.PENDING_STOP
+            alpha = if (isEnabled) 1f else 0.45f
+        }
         controllerStatusView?.text = buildControllerStatusText()
         pointsTextView?.text = buildControllerPointsText()
     }
 
     private fun buildControllerStatusText(): String {
         val prefs = AutoTapperConfig.prefs(this)
-        val intervalMs = prefs.getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).coerceAtLeast(100L)
+        val globalIntervalMs = prefs.getLong(
+            AutoTapperConfig.KEY_INTERVAL_MS,
+            400L
+        ).coerceAtLeast(100L)
         val randomExtraMs = prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L)
         val repeatCount = prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
+        val currentPoint = AutoTapperConfig.loadPoints(this).getOrNull(currentPointIndex)
+        val intervalMs = currentPoint?.delayMs?.takeIf { it > 0L } ?: globalIntervalMs
+        val holdDurationMs = currentPoint?.holdDurationMs ?: TapPoint.DEFAULT_HOLD_DURATION_MS
 
         val repeatText = if (repeatCount == 0) {
             getString(R.string.overlay_repeat_infinite)
         } else {
             getString(R.string.overlay_repeat_finite, repeatCount)
         }
-        val stateText = if (isClicking) getString(R.string.overlay_state_running)
-        else getString(R.string.overlay_state_idle)
+        val stateText = when {
+            pendingAction == AutoTapperConfig.PENDING_STOP ->
+                getString(R.string.overlay_state_stopping)
+            pendingAction == AutoTapperConfig.PENDING_PAUSE ->
+                getString(R.string.overlay_state_pause_pending)
+            isClicking -> getString(R.string.overlay_state_running)
+            isPaused -> getString(R.string.overlay_state_paused)
+            else -> getString(R.string.overlay_state_idle)
+        }
 
         return getString(
             R.string.overlay_status_template,
             stateText,
             intervalMs,
             intervalMs + randomExtraMs,
-            repeatText
+            repeatText,
+            roundsCompleted,
+            holdDurationMs
         )
     }
 
@@ -743,11 +841,24 @@ class OverlayService : Service() {
         }
         val maxShown = 2
         val head = points.take(maxShown).joinToString("  ") { "(${it.x},${it.y})" }
-        return if (points.size > maxShown) {
+        val coordinates = if (points.size > maxShown) {
             "$head  ${getString(R.string.overlay_points_more, points.size - maxShown)}"
         } else {
             head
         }
+        val current = points.getOrNull(currentPointIndex)
+        if ((isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) &&
+            current != null
+        ) {
+            val progress = getString(
+                R.string.overlay_current_point_progress,
+                currentPointIndex + 1,
+                (pointRepeatProgress + 1).coerceAtMost(current.repeatCount),
+                current.repeatCount
+            )
+            return "$progress\n$coordinates"
+        }
+        return coordinates
     }
 
     private fun refreshMarkers() {
@@ -778,9 +889,11 @@ class OverlayService : Service() {
         points.forEachIndexed { index, point ->
             val marker = pointMarkers[index]
             windowManager.updateViewLayout(marker, markerLayoutParams(point.x, point.y))
-            if (isClicking && index == currentPointIndex) {
+            if ((isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) &&
+                index == currentPointIndex
+            ) {
                 marker.alpha = 1f
-                startMarkerPulse(marker)
+                if (isClicking) startMarkerPulse(marker) else stopMarkerPulse(marker)
             } else {
                 stopMarkerPulse(marker)
                 marker.alpha = 0.75f
@@ -892,7 +1005,7 @@ class OverlayService : Service() {
     }
 
     private fun stopClickingIfNeeded() {
-        if (isClicking) {
+        if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) {
             sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
         }
     }

@@ -27,15 +27,38 @@
         android:textColor="@color/on_primary_container"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tv_point_coords"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:fontFamily="monospace"
-        android:textAppearance="@style/Text.AutoTapper.Body"
-        android:textColor="@color/text_primary" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_point_coords"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textAppearance="@style/Text.AutoTapper.Body"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_point_details"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textAppearance="@style/Text.AutoTapper.Caption" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/btn_point_edit"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circular_button"
+        android:contentDescription="@string/edit_point_desc"
+        android:padding="10dp"
+        android:src="@drawable/ic_overlay_edit"
+        app:tint="@color/on_primary_container" />
 
     <ImageView
         android:id="@+id/btn_point_delete"
