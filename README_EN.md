@@ -122,6 +122,15 @@ app/src/main/
 
 ## Contributing
 
+Thank you to the contributors who directly shaped AutoTapper's features and experience. Attribution follows the original pull requests and commit history:
+
+| Contributor | Main contributions |
+| --- | --- |
+| [@YangZiyueZY](https://github.com/YangZiyueZY) | Contributed ordered multi-point tapping, the draggable floating controller, point management and migration, update checks, and release automation in [PR #5](https://github.com/JX-Lab/AutoTapper/pull/5). Also delivered the main-screen and overlay redesign, opacity control, large-screen layouts, and the README hero and workflow visuals. |
+| [@Rose088211](https://github.com/Rose088211) | Contributed the initial English UI resources and English README in [PR #4](https://github.com/JX-Lab/AutoTapper/pull/4), establishing the foundation for the project's bilingual support. |
+
+If your name or contribution summary needs correction, please open an Issue or PR and we will update it according to the commit history.
+
 Bug reports, documentation improvements, translations, and focused feature pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before starting.
 
 1. Search or open an Issue describing the problem, reproduction steps, or feature boundaries.
@@ -129,10 +138,6 @@ Bug reports, documentation improvements, translations, and focused feature pull 
 3. Update both default English and Simplified Chinese resources.
 4. Run `./gradlew assembleDebug` and test the primary flow on a device or emulator.
 5. Open a PR explaining why, how it was validated, and include screenshots for UI work.
-
-Current proposals are tracked in [Issues](https://github.com/JX-Lab/AutoTapper/issues), including [#1 scheduled tapping](https://github.com/JX-Lab/AutoTapper/issues/1).
-
-See the [scheduled-start design note](./docs/issue-1-scheduled-start.md) for the proposed scope, timing model, and test plan for Issue #1.
 
 ## Safety boundaries
 

@@ -122,6 +122,15 @@ app/src/main/
 
 ## 贡献
 
+感谢下面的贡献者直接推动了 AutoTapper 的功能和体验升级。贡献归属依据原始 PR 与提交历史记录：
+
+| 贡献者 | 主要贡献 |
+| --- | --- |
+| [@YangZiyueZY](https://github.com/YangZiyueZY) | 在 [PR #5](https://github.com/JX-Lab/AutoTapper/pull/5) 中提供多点顺序点击、可拖动悬浮控制器、点位列表与迁移、更新检查和发布自动化；同时完成主界面与悬浮窗重构、透明度调节、大屏适配，以及 README 头图和流程图。 |
+| [@Rose088211](https://github.com/Rose088211) | 在 [PR #4](https://github.com/JX-Lab/AutoTapper/pull/4) 中提供初始英文界面资源与英文 README，为项目后续的中英双语支持打下基础。 |
+
+如果你的名字或贡献说明需要修正，请提交 Issue 或 PR，我们会按提交历史及时更新。
+
 Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。简要流程：
 
 1. 搜索或创建 Issue，说明问题、复现步骤或功能边界。
@@ -129,10 +138,6 @@ Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读
 3. 同时维护英文默认资源和简体中文资源。
 4. 运行 `./gradlew assembleDebug`，并在设备或模拟器验证主要流程。
 5. 提交 PR，写清楚变更原因、测试步骤；UI 改动请附截图。
-
-当前正在讨论的方向可在 [Issues](https://github.com/JX-Lab/AutoTapper/issues) 查看，包括 [#1 定时开始点击](https://github.com/JX-Lab/AutoTapper/issues/1)。
-
-Issue #1 的可行实现边界、时间模型和测试清单见 [定时开始点击设计方案](./docs/issue-1-scheduled-start.md)。
 
 ## 安全与使用边界
 
