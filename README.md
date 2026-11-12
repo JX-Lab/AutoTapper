@@ -120,7 +120,7 @@ app/src/main/
 └── res/                      # 布局、矢量图标、主题与双语文案
 ```
 
-## 贡献者
+## 贡献
 
 感谢下面的贡献者直接推动了 AutoTapper 的功能和体验升级。贡献归属依据原始 PR 与提交历史记录：
 
@@ -131,8 +131,6 @@ app/src/main/
 
 如果你的名字或贡献说明需要修正，请提交 Issue 或 PR，我们会按提交历史及时更新。
 
-## 贡献
-
 Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。简要流程：
 
 1. 搜索或创建 Issue，说明问题、复现步骤或功能边界。
@@ -140,10 +138,6 @@ Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读
 3. 同时维护英文默认资源和简体中文资源。
 4. 运行 `./gradlew assembleDebug`，并在设备或模拟器验证主要流程。
 5. 提交 PR，写清楚变更原因、测试步骤；UI 改动请附截图。
-
-当前正在讨论的方向可在 [Issues](https://github.com/JX-Lab/AutoTapper/issues) 查看，包括 [#1 定时开始点击](https://github.com/JX-Lab/AutoTapper/issues/1)。
-
-Issue #1 的可行实现边界、时间模型和测试清单见 [定时开始点击设计方案](./docs/issue-1-scheduled-start.md)。
 
 ## 安全与使用边界
 

@@ -120,7 +120,7 @@ app/src/main/
 └── res/                      # Layouts, vector assets, theme, and localization
 ```
 
-## Contributors
+## Contributing
 
 Thank you to the contributors who directly shaped AutoTapper's features and experience. Attribution follows the original pull requests and commit history:
 
@@ -131,8 +131,6 @@ Thank you to the contributors who directly shaped AutoTapper's features and expe
 
 If your name or contribution summary needs correction, please open an Issue or PR and we will update it according to the commit history.
 
-## Contributing
-
 Bug reports, documentation improvements, translations, and focused feature pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md) before starting.
 
 1. Search or open an Issue describing the problem, reproduction steps, or feature boundaries.
@@ -140,10 +138,6 @@ Bug reports, documentation improvements, translations, and focused feature pull 
 3. Update both default English and Simplified Chinese resources.
 4. Run `./gradlew assembleDebug` and test the primary flow on a device or emulator.
 5. Open a PR explaining why, how it was validated, and include screenshots for UI work.
-
-Current proposals are tracked in [Issues](https://github.com/JX-Lab/AutoTapper/issues), including [#1 scheduled tapping](https://github.com/JX-Lab/AutoTapper/issues/1).
-
-See the [scheduled-start design note](./docs/issue-1-scheduled-start.md) for the proposed scope, timing model, and test plan for Issue #1.
 
 ## Safety boundaries
 
