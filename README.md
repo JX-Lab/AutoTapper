@@ -120,6 +120,17 @@ app/src/main/
 └── res/                      # 布局、矢量图标、主题与双语文案
 ```
 
+## 贡献者
+
+感谢下面的贡献者直接推动了 AutoTapper 的功能和体验升级。贡献归属依据原始 PR 与提交历史记录：
+
+| 贡献者 | 主要贡献 |
+| --- | --- |
+| [@YangZiyueZY](https://github.com/YangZiyueZY) | 在 [PR #5](https://github.com/JX-Lab/AutoTapper/pull/5) 中提供多点顺序点击、可拖动悬浮控制器、点位列表与迁移、更新检查和发布自动化；同时完成主界面与悬浮窗重构、透明度调节、大屏适配，以及 README 头图和流程图。 |
+| [@Rose088211](https://github.com/Rose088211) | 在 [PR #4](https://github.com/JX-Lab/AutoTapper/pull/4) 中提供初始英文界面资源与英文 README，为项目后续的中英双语支持打下基础。 |
+
+如果你的名字或贡献说明需要修正，请提交 Issue 或 PR，我们会按提交历史及时更新。
+
 ## 贡献
 
 Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。简要流程：
