@@ -1,18 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- AutoTapper brand mark: an ordered tap path with one active point. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Rounded night-sky tile, matching the README hero. -->
-    <path
-        android:fillColor="#101828"
-        android:pathData="M24,6 L84,6 C93.94,6 102,14.06 102,24 L102,84 C102,93.94 93.94,102 84,102 L24,102 C14.06,102 6,93.94 6,84 L6,24 C6,14.06 14.06,6 24,6 Z" />
-    <path
-        android:fillColor="#182338"
-        android:pathData="M27,12 L81,12 C89.28,12 96,18.72 96,27 L96,45 C78,31 48,24 12,36 L12,27 C12,18.72 18.72,12 27,12 Z" />
+    <!-- One continuous diagonal gradient, matching the README hero. -->
+    <path android:pathData="M24,6 L84,6 C93.94,6 102,14.06 102,24 L102,84 C102,93.94 93.94,102 84,102 L24,102 C14.06,102 6,93.94 6,84 L6,24 C6,14.06 14.06,6 24,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endX="96"
+                android:endY="100"
+                android:startX="12"
+                android:startY="10"
+                android:type="linear">
+                <item android:color="#17243A" android:offset="0" />
+                <item android:color="#101828" android:offset="0.55" />
+                <item android:color="#0C111B" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
 
     <!-- Ordered loop. -->
     <path
