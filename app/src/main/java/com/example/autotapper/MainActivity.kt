@@ -4,10 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -168,7 +166,12 @@ class MainActivity : AppCompatActivity() {
         )
         dot.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
-            setColor(Color.parseColor(if (granted) "#16A34A" else "#DC2626"))
+            setColor(
+                ContextCompat.getColor(
+                    this@MainActivity,
+                    if (granted) R.color.success else R.color.danger
+                )
+            )
         }
     }
 
@@ -360,12 +363,12 @@ class MainActivity : AppCompatActivity() {
             addAction(AutoTapperConfig.ACTION_POINT_SELECTED)
             addAction(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(pointReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(pointReceiver, filter)
-        }
+        ContextCompat.registerReceiver(
+            this,
+            pointReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         pointReceiverRegistered = true
     }
 

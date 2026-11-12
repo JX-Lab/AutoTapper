@@ -12,8 +12,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
-import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
@@ -205,12 +205,12 @@ class OverlayService : Service() {
             addAction(AutoTapperConfig.ACTION_POINT_SELECTED)
             addAction(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(serviceReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(serviceReceiver, filter)
-        }
+        ContextCompat.registerReceiver(
+            this,
+            serviceReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     private fun startAsForegroundService() {
@@ -416,12 +416,9 @@ class OverlayService : Service() {
     private fun buildControllerView(): LinearLayout {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = roundedDrawable(
-                fillColor = color(R.color.surface_container),
-                strokeColor = color(R.color.outline),
-                radiusDp = 16f
-            )
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_overlay_panel)
+            minimumWidth = dp(280)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
             elevation = resources.getDimension(R.dimen.overlay_elevation)
             alpha = controllerAlpha
         }
@@ -433,21 +430,24 @@ class OverlayService : Service() {
 
         val collapseChip = TextView(this).apply {
             text = getString(R.string.overlay_collapse_label)
-            setTextColor(color(R.color.text_primary))
-            textSize = 13f
+            setTextColor(color(R.color.on_primary_container))
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
             background = roundedDrawable(
-                fillColor = color(R.color.card_bg),
-                strokeColor = color(R.color.outline),
-                radiusDp = 12f
+                fillColor = color(R.color.primary_container),
+                strokeColor = color(R.color.accent_dark),
+                radiusDp = 14f
             )
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(11), dp(7), dp(11), dp(7))
             setOnClickListener { showCollapsedHandle() }
         }
 
         val title = TextView(this).apply {
-            text = getString(R.string.overlay_controller_title)
-            setTextColor(color(R.color.text_primary))
-            textSize = 15f
+            text = getString(R.string.overlay_eyebrow)
+            setTextColor(color(R.color.on_primary_container))
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.08f
             setPadding(dp(10), 0, 0, 0)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -465,8 +465,8 @@ class OverlayService : Service() {
 
         val buttonRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(12), 0, 0)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(14), 0, 0)
         }
 
         val addButton = buildActionButton(
@@ -486,7 +486,8 @@ class OverlayService : Service() {
 
         val playButton = buildActionButton(
             iconRes = R.drawable.ic_overlay_play,
-            contentDescriptionRes = R.string.overlay_play_button_desc
+            contentDescriptionRes = R.string.overlay_play_button_desc,
+            primary = true
         ).apply {
             setOnClickListener { toggleClicking() }
         }
@@ -500,17 +501,28 @@ class OverlayService : Service() {
 
         val statusView = TextView(this).apply {
             setTextColor(color(R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, dp(12), 0, 0)
+            textSize = 12f
+            typeface = Typeface.MONOSPACE
+            background = roundedDrawable(
+                fillColor = color(R.color.surface_variant),
+                strokeColor = color(R.color.outline_variant),
+                radiusDp = 14f
+            )
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(14) }
         }
         controllerStatusView = statusView
 
         val pointsView = TextView(this).apply {
-            setTextColor(color(R.color.text_secondary))
+            setTextColor(color(R.color.on_primary_container))
             textSize = 12f
+            typeface = Typeface.MONOSPACE
             maxLines = 2
             ellipsize = TextUtils.TruncateAt.END
-            setPadding(0, dp(4), 0, 0)
+            setPadding(dp(2), dp(8), dp(2), 0)
         }
         pointsTextView = pointsView
 
@@ -521,16 +533,24 @@ class OverlayService : Service() {
         return root
     }
 
-    private fun buildActionButton(iconRes: Int, contentDescriptionRes: Int) =
+    private fun buildActionButton(
+        iconRes: Int,
+        contentDescriptionRes: Int,
+        primary: Boolean = false
+    ) =
         ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             adjustViewBounds = true
             setPadding(dp(10), dp(10), dp(10), dp(10))
             setImageResource(iconRes)
-            setColorFilter(color(R.color.text_primary))
+            setColorFilter(color(if (primary) R.color.on_primary else R.color.text_primary))
             this.contentDescription = getString(contentDescriptionRes)
-            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_circular_button)
+            background = ContextCompat.getDrawable(
+                this@OverlayService,
+                if (primary) R.drawable.bg_overlay_primary_button
+                else R.drawable.bg_circular_button
+            )
         }
 
     private fun spacerView() = View(this).apply {
@@ -674,24 +694,10 @@ class OverlayService : Service() {
         val hasPoint = AutoTapperConfig.hasPoints(this)
 
         collapsedHandleView?.apply {
-            background = roundedDrawable(
-                fillColor = if (isClicking) {
-                    color(R.color.accent_container)
-                } else {
-                    color(R.color.primary)
-                },
-                strokeColor = if (isClicking) {
-                    color(R.color.accent)
-                } else {
-                    color(R.color.primary_container)
-                },
-                radiusDp = 24f,
-                shape = GradientDrawable.OVAL
-            )
-            setColorFilter(
-                if (isClicking) color(R.color.on_accent_container)
-                else color(R.color.on_primary)
-            )
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
+            setColorFilter(color(R.color.on_primary))
+            scaleX = if (isClicking) 1.08f else 1f
+            scaleY = if (isClicking) 1.08f else 1f
         }
 
         playButtonView?.apply {
