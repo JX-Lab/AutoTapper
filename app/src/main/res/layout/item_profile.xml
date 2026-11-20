@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_point_item"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingStart="14dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="6dp"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <TextView android:id="@+id/tv_profile_item_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/Text.AutoTapper.Label" />
+            <TextView android:id="@+id/tv_profile_item_active" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_badge" android:paddingStart="8dp" android:paddingTop="3dp" android:paddingEnd="8dp" android:paddingBottom="3dp" android:text="@string/profile_active_short" android:textAppearance="@style/Text.AutoTapper.Caption" android:textColor="@color/on_primary_container" android:visibility="gone" />
+        </LinearLayout>
+        <TextView android:id="@+id/tv_profile_item_summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/Text.AutoTapper.Caption" />
+    </LinearLayout>
+
+    <ImageView android:id="@+id/btn_profile_item_edit" android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_circular_button" android:contentDescription="@string/profile_edit_desc" android:padding="10dp" android:src="@drawable/ic_overlay_edit" app:tint="@color/on_primary_container" />
+    <ImageView android:id="@+id/btn_profile_item_delete" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="4dp" android:background="@drawable/bg_circular_button" android:contentDescription="@string/profile_delete" android:padding="10dp" android:src="@drawable/ic_overlay_delete" app:tint="@color/danger" />
+</LinearLayout>

@@ -29,6 +29,7 @@ import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -373,6 +374,7 @@ class OverlayService : Service() {
 
     private fun showCollapsedHandle(animate: Boolean = true) {
         isControllerExpanded = false
+        if (settingsExpanded) setControllerFocusable(false)
         dismissPickerOverlay()
         val previousController = controllerView
         controllerView = null
@@ -573,19 +575,6 @@ class OverlayService : Service() {
             setOnClickListener { showCollapsedHandle() }
         }
 
-        val title = TextView(this).apply {
-            text = getString(
-                if (isPicking) R.string.overlay_picking_eyebrow
-                else R.string.overlay_eyebrow
-            )
-            setTextColor(color(R.color.text_primary))
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            letterSpacing = 0.08f
-            setPadding(dp(10), 0, 0, 0)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
         val closeButton = buildActionButton(
             iconRes = R.drawable.ic_overlay_close,
             contentDescriptionRes = R.string.overlay_close_button_desc
@@ -605,7 +594,9 @@ class OverlayService : Service() {
         settingsButtonView = settingsButton
 
         header.addView(collapseButton)
-        header.addView(title)
+        header.addView(View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        })
         if (!isPicking) header.addView(settingsButton)
         header.addView(closeButton)
 
@@ -863,6 +854,15 @@ class OverlayService : Service() {
                 radiusDp = 10f
             )
             setPadding(dp(10), 0, dp(10), 0)
+            setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.post {
+                        val inputMethodManager =
+                            getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                        inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+                    }
+                }
+            }
         }
         val field = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -941,6 +941,7 @@ class OverlayService : Service() {
             color(if (settingsExpanded) R.color.primary else R.color.text_primary)
         )
         if (settingsExpanded) {
+            setControllerFocusable(true)
             panel.visibility = View.VISIBLE
             panel.alpha = 0f
             panel.translationY = -dp(8).toFloat()
@@ -949,6 +950,7 @@ class OverlayService : Service() {
                 controllerView?.let { snapToNearestEdge(it, animate = true) }
             }
         } else {
+            setControllerFocusable(false)
             panel.animate()
                 .alpha(0f)
                 .translationY((-dp(8)).toFloat())
@@ -960,6 +962,25 @@ class OverlayService : Service() {
                     }
                 }
                 .start()
+        }
+    }
+
+    private fun setControllerFocusable(focusable: Boolean) {
+        val view = controllerView ?: return
+        val params = view.layoutParams as? WindowManager.LayoutParams ?: return
+        params.flags = if (focusable) {
+            (params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()) or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        } else {
+            (params.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) and
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL.inv()
+        }
+        params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        runCatching { windowManager.updateViewLayout(view, params) }
+        if (!focusable) {
+            val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+            view.clearFocus()
         }
     }
 
@@ -1418,6 +1439,7 @@ class OverlayService : Service() {
     }
 
     private fun closeController() {
+        if (settingsExpanded) setControllerFocusable(false)
         if (pickerView != null) rollbackPickedPoints()
         stopClickingIfNeeded()
         stopSelf()

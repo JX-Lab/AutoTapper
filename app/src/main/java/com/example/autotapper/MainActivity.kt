@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -37,11 +38,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etIntervalMs: EditText
     private lateinit var etRandomExtraMs: EditText
     private lateinit var etRepeatCount: EditText
+    private lateinit var etDefaultHoldMs: EditText
+    private lateinit var etDefaultPointRepeat: EditText
     private lateinit var sliderControllerAlpha: Slider
     private lateinit var tvControllerAlphaValue: TextView
     private lateinit var tvProfileName: TextView
     private lateinit var btnProfileSave: MaterialButton
-    private lateinit var btnProfileDelete: View
+    private lateinit var rvProfiles: RecyclerView
+    private lateinit var tvProfilesEmpty: TextView
+    private lateinit var configContent: View
+    private lateinit var profilesContent: View
+    private lateinit var configArrow: ImageView
+    private lateinit var profilesArrow: ImageView
     private lateinit var permissionCard: View
     private lateinit var overlayPermissionRow: View
     private lateinit var accessibilityPermissionRow: View
@@ -51,6 +59,9 @@ class MainActivity : AppCompatActivity() {
     private var isLoadingConfig = false
     private var points: List<TapPoint> = emptyList()
     private lateinit var pointsAdapter: PointListAdapter
+    private lateinit var profilesAdapter: ProfileListAdapter
+    private var configExpanded = false
+    private var profilesExpanded = false
 
     private val pointReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -79,11 +90,18 @@ class MainActivity : AppCompatActivity() {
         etIntervalMs = findViewById(R.id.et_interval_ms)
         etRandomExtraMs = findViewById(R.id.et_random_extra_ms)
         etRepeatCount = findViewById(R.id.et_repeat_count)
+        etDefaultHoldMs = findViewById(R.id.et_default_hold_ms)
+        etDefaultPointRepeat = findViewById(R.id.et_default_point_repeat)
         sliderControllerAlpha = findViewById(R.id.slider_controller_alpha)
         tvControllerAlphaValue = findViewById(R.id.tv_controller_alpha_value)
         tvProfileName = findViewById(R.id.tv_profile_name)
         btnProfileSave = findViewById(R.id.btn_profile_save)
-        btnProfileDelete = findViewById(R.id.btn_profile_delete)
+        rvProfiles = findViewById(R.id.rv_profiles)
+        tvProfilesEmpty = findViewById(R.id.tv_profiles_empty)
+        configContent = findViewById(R.id.group_config_content)
+        profilesContent = findViewById(R.id.group_profiles_content)
+        configArrow = findViewById(R.id.arrow_config)
+        profilesArrow = findViewById(R.id.arrow_profiles)
         permissionCard = findViewById(R.id.card_permissions)
         overlayPermissionRow = findViewById(R.id.row_overlay_permission)
         accessibilityPermissionRow = findViewById(R.id.row_accessibility_permission)
@@ -95,6 +113,22 @@ class MainActivity : AppCompatActivity() {
         rvPoints.layoutManager = LinearLayoutManager(this)
         rvPoints.adapter = pointsAdapter
         rvPoints.itemAnimator = DefaultItemAnimator()
+        profilesAdapter = ProfileListAdapter(
+            onLoad = { profile -> activateProfile(profile.id) },
+            onEdit = { profile ->
+                activateProfile(profile.id)
+                if (!configExpanded) toggleConfigDrawer()
+                Toast.makeText(
+                    this,
+                    getString(R.string.profile_edit_loaded, profile.name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onDelete = { profile -> confirmDeleteProfile(profile) }
+        )
+        rvProfiles.layoutManager = LinearLayoutManager(this)
+        rvProfiles.adapter = profilesAdapter
+        rvProfiles.itemAnimator = DefaultItemAnimator()
 
         findViewById<View>(R.id.btn_grant_overlay).setOnClickListener {
             PermissionUtils.requestOverlayPermission(this)
@@ -113,14 +147,17 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btn_tutorial).setOnClickListener {
             startActivity(Intent(this, TutorialActivity::class.java))
         }
-        findViewById<View>(R.id.btn_profile_select).setOnClickListener {
-            showProfileSelector()
-        }
         btnProfileSave.setOnClickListener {
             showSaveProfileDialog()
         }
-        btnProfileDelete.setOnClickListener {
-            confirmDeleteActiveProfile()
+        findViewById<View>(R.id.btn_toggle_config).setOnClickListener {
+            toggleConfigDrawer()
+        }
+        findViewById<View>(R.id.btn_toggle_profiles).setOnClickListener {
+            toggleProfilesDrawer()
+        }
+        findViewById<View>(R.id.btn_apply_point_defaults).setOnClickListener {
+            applyPointDefaults()
         }
 
         sliderControllerAlpha.addOnChangeListener { _, value, fromUser ->
@@ -151,6 +188,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        loadSavedConfig()
         updateStatus()
     }
 
@@ -167,6 +205,8 @@ class MainActivity : AppCompatActivity() {
             prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).toString()
         )
         etRepeatCount.setText(prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).toString())
+        etDefaultHoldMs.setText(AutoTapperConfig.getDefaultHoldDuration(this).toString())
+        etDefaultPointRepeat.setText(AutoTapperConfig.getDefaultPointRepeat(this).toString())
 
         val alpha = AutoTapperConfig.getControllerAlpha(this)
         sliderControllerAlpha.value = alpha
@@ -219,6 +259,51 @@ class MainActivity : AppCompatActivity() {
         refreshActiveProfile()
     }
 
+    private fun applyPointDefaults() {
+        val hold = etDefaultHoldMs.text.toString().toLongOrNull()
+        val repeats = etDefaultPointRepeat.text.toString().toIntOrNull()
+        val valid = hold != null && hold in AutoTapperConfig.MIN_HOLD_DURATION_MS..
+            AutoTapperConfig.MAX_HOLD_DURATION_MS && repeats != null &&
+            repeats in 1..AutoTapperConfig.MAX_POINT_REPEAT
+        if (!valid) {
+            Toast.makeText(this, R.string.point_defaults_invalid, Toast.LENGTH_LONG).show()
+            return
+        }
+        AutoTapperConfig.saveDefaultPointSettings(this, hold!!, repeats!!)
+        AutoTapperConfig.applyDefaultPointSettingsToAll(this)
+        loadAndShowPoints()
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName))
+        Toast.makeText(this, R.string.point_defaults_applied, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun toggleConfigDrawer() {
+        configExpanded = !configExpanded
+        animateDrawer(configContent, configArrow, configExpanded)
+    }
+
+    private fun toggleProfilesDrawer() {
+        profilesExpanded = !profilesExpanded
+        if (profilesExpanded) refreshProfilesList()
+        animateDrawer(profilesContent, profilesArrow, profilesExpanded)
+    }
+
+    private fun animateDrawer(content: View, arrow: ImageView, expanded: Boolean) {
+        arrow.animate().rotation(if (expanded) 180f else 0f).setDuration(180L).start()
+        if (expanded) {
+            content.visibility = View.VISIBLE
+            content.alpha = 0f
+            content.translationY = -8f
+            content.animate().alpha(1f).translationY(0f).setDuration(200L).start()
+        } else {
+            content.animate()
+                .alpha(0f)
+                .translationY(-8f)
+                .setDuration(160L)
+                .withEndAction { content.visibility = View.GONE }
+                .start()
+        }
+    }
+
     private fun refreshActiveProfile() {
         val active = AutoTapperConfig.getActiveProfile(this)
         tvProfileName.text = when {
@@ -234,8 +319,16 @@ class MainActivity : AppCompatActivity() {
                 R.string.profile_save
             }
         )
-        btnProfileDelete.isEnabled = active != null
-        btnProfileDelete.alpha = if (active != null) 1f else 0.45f
+        refreshProfilesList()
+    }
+
+    private fun refreshProfilesList() {
+        val profiles = AutoTapperConfig.loadProfiles(this)
+        val activeId = AutoTapperConfig.getActiveProfile(this)?.id
+        profilesAdapter.submitProfiles(profiles, activeId)
+        val empty = profiles.isEmpty()
+        tvProfilesEmpty.visibility = if (empty) View.VISIBLE else View.GONE
+        rvProfiles.visibility = if (empty) View.GONE else View.VISIBLE
     }
 
     private fun updatePermissionRow(dot: View, textView: TextView, templateRes: Int, granted: Boolean) {
@@ -433,6 +526,7 @@ class MainActivity : AppCompatActivity() {
     private fun saveProfileNow(name: String) {
         val profile = AutoTapperConfig.saveCurrentProfile(this, name)
         refreshActiveProfile()
+        refreshProfilesList()
         Toast.makeText(
             this,
             getString(R.string.profile_saved, profile.name),
@@ -453,14 +547,14 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun confirmDeleteActiveProfile() {
-        val profile = AutoTapperConfig.getActiveProfile(this) ?: return
+    private fun confirmDeleteProfile(profile: AutomationProfile) {
         AlertDialog.Builder(this)
             .setTitle(R.string.profile_delete_title)
             .setMessage(getString(R.string.profile_delete_message, profile.name))
             .setPositiveButton(R.string.profile_delete) { _, _ ->
                 AutoTapperConfig.deleteProfile(this, profile.id)
                 refreshActiveProfile()
+                refreshProfilesList()
                 Toast.makeText(this, R.string.profile_deleted, Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton(R.string.cancel_capture, null)
@@ -671,6 +765,12 @@ class MainActivity : AppCompatActivity() {
             intervalMs,
             intervalMs + randomExtraMs,
             repeatSummary
+        ) + "\n" + getString(
+            R.string.config_summary_point_defaults,
+            etDefaultHoldMs.text.toString().toLongOrNull()
+                ?: AutoTapperConfig.getDefaultHoldDuration(this),
+            etDefaultPointRepeat.text.toString().toIntOrNull()
+                ?: AutoTapperConfig.getDefaultPointRepeat(this)
         )
 
         tvConfigSummary.text = if (intervalInput < 100L) {

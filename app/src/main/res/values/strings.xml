@@ -63,6 +63,10 @@
     <string name="profile_loaded">Profile “%1$s” loaded.</string>
     <string name="profile_deleted">Profile deleted.</string>
     <string name="profile_list_empty">No saved profiles yet.</string>
+    <string name="profile_active_short">ACTIVE</string>
+    <string name="profile_edit_desc">Load this profile for editing</string>
+    <string name="profile_edit_loaded">“%1$s” loaded. Edit points or settings above, then save.</string>
+    <string name="profile_summary_template">%1$d points · %2$d ms · %3$s</string>
 
     <string name="config_title">Tap Configuration</string>
     <string name="config_subtitle">Tune the rhythm once; the floating controller uses it instantly.</string>
@@ -75,11 +79,19 @@
     <string name="repeat_count_help">Each round completes every point, including its configured consecutive taps. Enter 0 to continue until stopped.</string>
     <string name="controller_alpha_label">Controller opacity</string>
     <string name="controller_alpha_value">%1$.0f%%</string>
+    <string name="default_hold_label">Default press duration</string>
+    <string name="default_hold_help">Applied to new points; use Apply to update all current points.</string>
+    <string name="default_point_repeat_label">Default taps per point</string>
+    <string name="default_point_repeat_help">Applied to new points; valid range is 1–9999.</string>
+    <string name="apply_point_defaults">Apply point settings to all points</string>
+    <string name="point_defaults_applied">Point press duration and tap count applied.</string>
+    <string name="point_defaults_invalid">Press duration must be 20–10000 ms and taps must be 1–9999.</string>
     <string name="config_summary_title">Configuration Summary</string>
     <string name="config_summary_template">Multi-point sequence · %1$d points\nWait after each tap: %2$d–%3$d ms\nRounds: %4$s</string>
     <string name="config_summary_repeat_infinite">Infinite (until stopped)</string>
     <string name="config_summary_repeat_finite">%1$d rounds</string>
     <string name="config_summary_invalid">Enter valid settings. The base interval must be at least 100 ms, and the random delay and rounds cannot be empty.</string>
+    <string name="config_summary_point_defaults">Point defaults: hold %1$d ms · taps %2$d</string>
     <string name="interval_adjusted_note">The base interval is below 100 ms and will be adjusted to 100 ms when tapping starts.</string>
 
     <string name="start_clicking">Start Tapping</string>
