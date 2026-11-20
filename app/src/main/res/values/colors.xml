@@ -1,44 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand: README night-sky + execution orange -->
-    <color name="primary">#FF7A1A</color>
-    <color name="primary_dark">#0C111B</color>
-    <color name="on_primary">#0B1120</color>
-    <color name="primary_container">#3B2417</color>
-    <color name="on_primary_container">#FFB067</color>
-
-    <color name="accent">#FF8A3D</color>
-    <color name="accent_dark">#D94E00</color>
-    <color name="accent_container">#4A2A18</color>
-    <color name="on_accent_container">#FFD0A8</color>
-
-    <color name="tertiary">#56D4FF</color>
-    <color name="tertiary_container">#123247</color>
-    <color name="on_tertiary_container">#BCEBFF</color>
-
-    <!-- Semantic -->
-    <color name="success">#35D07F</color>
-    <color name="danger">#FF5C6C</color>
-    <color name="error_container">#4A1D28</color>
-    <color name="on_error_container">#FFC1C8</color>
-
-    <!-- Night-sky surfaces -->
-    <color name="bg_page">#0C111B</color>
-    <color name="card_bg">#121A2A</color>
-    <color name="surface_variant">#172235</color>
-    <color name="surface_container">#121A2A</color>
-    <color name="surface_container_high">#182338</color>
-    <color name="surface_container_highest">#22304A</color>
-
-    <!-- Text -->
-    <color name="text_primary">#F8FAFC</color>
-    <color name="text_secondary">#9AABC2</color>
-
-    <!-- Lines and interaction -->
-    <color name="outline">#334155</color>
-    <color name="outline_variant">#243147</color>
-    <color name="control_highlight">#33FF8A3D</color>
-    <color name="overlay_bar">#F20B1120</color>
-    <color name="scrim">#B30C111B</color>
-    <color name="picker_scrim">#260C111B</color>
+    <color name="primary">#F97316</color>
+    <color name="primary_dark">#C2410C</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#FFF0E6</color>
+    <color name="on_primary_container">#9A3412</color>
+    <color name="accent">#EA580C</color>
+    <color name="accent_dark">#C2410C</color>
+    <color name="accent_container">#FFEDD5</color>
+    <color name="on_accent_container">#7C2D12</color>
+    <color name="tertiary">#0F766E</color>
+    <color name="tertiary_container">#CCFBF1</color>
+    <color name="on_tertiary_container">#134E4A</color>
+    <color name="success">#15803D</color>
+    <color name="danger">#DC2626</color>
+    <color name="error_container">#FEE2E2</color>
+    <color name="on_error_container">#991B1B</color>
+    <color name="bg_page">#F6F7F9</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="surface_variant">#F2F4F7</color>
+    <color name="surface_container">#FFFFFF</color>
+    <color name="surface_container_high">#F8FAFC</color>
+    <color name="surface_container_highest">#E9EDF2</color>
+    <color name="text_primary">#101828</color>
+    <color name="text_secondary">#667085</color>
+    <color name="outline">#D0D5DD</color>
+    <color name="outline_variant">#E4E7EC</color>
+    <color name="control_highlight">#26F97316</color>
+    <color name="overlay_bar">#FAFFFFFF</color>
+    <color name="scrim">#33000000</color>
+    <color name="picker_scrim">#14000000</color>
+    <color name="hero_start">#FFFFFF</color>
+    <color name="hero_center">#FFF8F3</color>
+    <color name="hero_end">#FFF0E6</color>
+    <color name="overlay_panel_start">#FFFFFF</color>
+    <color name="overlay_panel_end">#F8FAFC</color>
+    <color name="floating_handle_bg">#FFFFFF</color>
+    <color name="floating_handle_stroke">#F97316</color>
 </resources>

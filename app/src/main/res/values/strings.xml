@@ -17,7 +17,7 @@
     <string name="points_subtitle">The controller taps these positions from top to bottom.</string>
     <string name="points_count_badge">%1$d points</string>
     <string name="points_empty">No points yet. Open the floating controller and tap + to add positions.</string>
-    <string name="open_controller">Open Floating Controller</string>
+    <string name="open_controller">Open floating controller</string>
     <string name="point_item_index">Point %1$d</string>
     <string name="point_item_coords">(%1$d, %2$d)</string>
     <string name="delete_point_desc">Delete this point</string>
@@ -86,6 +86,27 @@
     <string name="stop_clicking">Stop Tapping</string>
     <string name="usage_note">After opening the controller, drag the side handle to reposition it. Expand it to add points with +, remove the last point with DEL, start with GO, and stop with STOP. The active point pulses while tapping.</string>
     <string name="usage_title">QUICK GUIDE</string>
+    <string name="theme_button_desc">Choose app theme</string>
+    <string name="tutorial_button_desc">Open tutorial</string>
+    <string name="theme_dialog_title">App theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Night</string>
+
+    <string name="tutorial_eyebrow">QUICK START</string>
+    <string name="tutorial_title">How to use AutoTapper</string>
+    <string name="tutorial_intro">The controller never taps by itself. You choose points first, then explicitly start the run.</string>
+    <string name="tutorial_step_1_title">1 · Grant required access</string>
+    <string name="tutorial_step_1_body">Enable display-over-apps and the AutoTapper accessibility service. Granted permission rows disappear and return only if access is lost.</string>
+    <string name="tutorial_step_2_title">2 · Open the controller</string>
+    <string name="tutorial_step_2_body">The main button only opens the floating controller. It does not enter point-picking mode.</string>
+    <string name="tutorial_step_3_title">3 · Add points</string>
+    <string name="tutorial_step_3_body">Tap the plus icon, touch each target position, then use the check icon in the compact top bar to finish.</string>
+    <string name="tutorial_step_4_title">4 · Run and control</string>
+    <string name="tutorial_step_4_body">Play starts, the same icon pauses or resumes, the square stops and resets, the trash removes the last point, and clear-all requires two taps.</string>
+    <string name="tutorial_step_5_title">5 · Move and collapse</string>
+    <string name="tutorial_step_5_body">Drag the controller or ball; it snaps to the nearest edge. Use the chevron icon to collapse and × to close.</string>
+    <string name="tutorial_done">Got it</string>
 
     <string name="overlay_permission_required">Grant overlay permission first.</string>
     <string name="overlay_started">The floating controller is ready in any app.</string>
@@ -147,12 +168,15 @@
     <string name="overlay_controller_title">Floating Controller</string>
     <string name="overlay_eyebrow">AUTOTAPPER · LIVE</string>
     <string name="overlay_add_button_desc">Add tap point</string>
-    <string name="overlay_clear_button_desc">Remove tap point</string>
+    <string name="overlay_clear_button_desc">Delete last tap point</string>
+    <string name="overlay_clear_all_button_desc">Clear all tap points</string>
     <string name="overlay_play_button_desc">Start tapping</string>
     <string name="overlay_pause_button_desc">Pause tapping</string>
     <string name="overlay_resume_button_desc">Resume tapping</string>
     <string name="overlay_stop_button_desc">Stop tapping</string>
     <string name="overlay_close_button_desc">Close floating controller</string>
+    <string name="clear_all_confirm">Tap clear-all again to remove every point.</string>
+    <string name="clear_all_done">All tap points removed.</string>
     <string name="overlay_handle_idle">AT</string>
     <string name="overlay_handle_running">RUN</string>
     <string name="overlay_points_template">%1$d points: %2$s</string>

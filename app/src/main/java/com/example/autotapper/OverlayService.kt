@@ -3,6 +3,7 @@ package com.example.autotapper
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,6 +13,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -25,6 +27,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -33,6 +36,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.appcompat.widget.TooltipCompat
+import androidx.appcompat.app.AppCompatDelegate
 import kotlin.math.abs
 
 class OverlayService : Service() {
@@ -46,6 +50,7 @@ class OverlayService : Service() {
     private var playButtonView: ImageView? = null
     private var addButtonView: ImageView? = null
     private var clearButtonView: ImageView? = null
+    private var clearAllButtonView: ImageView? = null
     private var stopButtonView: ImageView? = null
     private var pickerView: View? = null
     private var pickerCounterView: TextView? = null
@@ -66,8 +71,10 @@ class OverlayService : Service() {
     private var floatY = -1
 
     // 收起状态下悬浮球应处的位置。展开后如未拖动控制器，收起时回到此位置。
-    private var collapsedAnchorX = -1
     private var collapsedAnchorY = -1
+    private var dockOnRight = true
+    private var snapAnimator: ValueAnimator? = null
+    private var clearAllArmed = false
 
     // 控制器透明度（0.3 ~ 1.0）
     private var controllerAlpha = 0.9f
@@ -84,6 +91,7 @@ class OverlayService : Service() {
     private val dragTouchListener = View.OnTouchListener { view, event ->
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                snapAnimator?.cancel()
                 dragDownRawX = event.rawX
                 dragDownRawY = event.rawY
                 dragStartX = floatX.coerceAtLeast(0)
@@ -105,7 +113,6 @@ class OverlayService : Service() {
                     windowManager.updateViewLayout(view, params)
                     floatX = params.x
                     floatY = params.y
-                    collapsedAnchorX = params.x
                     collapsedAnchorY = params.y
                 }
                 true
@@ -114,6 +121,8 @@ class OverlayService : Service() {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 if (!dragActive) {
                     view.performClick()
+                } else {
+                    snapToNearestEdge(view, animate = true)
                 }
                 true
             }
@@ -163,10 +172,20 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        applyThemePreference()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         controllerAlpha = AutoTapperConfig.getControllerAlpha(this)
         registerServiceReceiver()
         startAsForegroundService()
+    }
+
+    private fun applyThemePreference() {
+        val mode = when (AutoTapperConfig.getThemeMode(this)) {
+            AutoTapperConfig.THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+            AutoTapperConfig.THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(mode)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -202,6 +221,7 @@ class OverlayService : Service() {
     }
 
     override fun onDestroy() {
+        snapAnimator?.cancel()
         stopClickingIfNeeded()
         dismissPickerOverlay()
         hideMarkers()
@@ -210,15 +230,37 @@ class OverlayService : Service() {
         pointMarkers.clear()
         markerAnimators.clear()
         controllerView = null
+        clearAllArmed = false
         collapsedHandleView = null
         controllerStatusView = null
         pointsTextView = null
         playButtonView = null
         addButtonView = null
         clearButtonView = null
+        clearAllButtonView = null
+        clearAllArmed = false
         stopButtonView = null
         runCatching { unregisterReceiver(serviceReceiver) }
         super.onDestroy()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        rebuildOverlayForTheme()
+    }
+
+    private fun rebuildOverlayForTheme() {
+        val wasExpanded = isControllerExpanded
+        val wasPicking = pickerView != null
+        dismissPickerOverlay()
+        hideMarkers()
+        removeViewSafely(controllerView)
+        removeViewSafely(collapsedHandleView)
+        controllerView = null
+        collapsedHandleView = null
+        if (wasExpanded) showExpandedController(animate = false)
+        else showCollapsedHandle(animate = false)
+        if (wasPicking) showPickerOverlay()
     }
 
     private fun registerServiceReceiver() {
@@ -324,11 +366,16 @@ class OverlayService : Service() {
         playButtonView = null
         addButtonView = null
         clearButtonView = null
+        clearAllButtonView = null
         stopButtonView = null
         hideMarkers()
 
-        val x = if (collapsedAnchorX >= 0) collapsedAnchorX else floatX.coerceAtLeast(0)
-        val y = if (collapsedAnchorY >= 0) collapsedAnchorY else floatY.coerceAtLeast(0)
+        val x = if (dockOnRight) screenWidth - dp(48) - dp(8) else dp(8)
+        val y = when {
+            collapsedAnchorY >= 0 -> collapsedAnchorY
+            floatY >= 0 -> floatY
+            else -> (screenHeight - dp(48)) / 2
+        }
         floatX = x
         floatY = y
 
@@ -337,7 +384,7 @@ class OverlayService : Service() {
             scaleType = ImageView.ScaleType.CENTER
             setPadding(dp(12), dp(12), dp(12), dp(12))
             setImageResource(R.drawable.ic_floating_handle)
-            setColorFilter(color(R.color.on_primary))
+            setColorFilter(color(R.color.primary))
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
             setOnClickListener { showExpandedController() }
             setOnTouchListener(dragTouchListener)
@@ -355,10 +402,9 @@ class OverlayService : Service() {
             if (floatX < 0 || floatY < 0) {
                 floatX = screenWidth - handle.width - dp(8)
                 floatY = (screenHeight - handle.height) / 2
-                collapsedAnchorX = floatX
                 collapsedAnchorY = floatY
             }
-            updateFloatPosition(handle)
+            snapToNearestEdge(handle, animate = false)
         }
 
         if (animate) {
@@ -389,9 +435,8 @@ class OverlayService : Service() {
         collapsedHandleView = null
 
         if (floatX < 0 || floatY < 0) {
-            floatX = (screenWidth - dp(170)).coerceAtLeast(0)
+            floatX = if (dockOnRight) (screenWidth - dp(288)).coerceAtLeast(0) else dp(8)
             floatY = (screenHeight - dp(180)) / 2
-            collapsedAnchorX = floatX
             collapsedAnchorY = floatY
         }
 
@@ -409,9 +454,7 @@ class OverlayService : Service() {
             if (controllerView !== view) {
                 return@post
             }
-            floatX = floatX.coerceIn(0, maxOf(0, screenWidth - view.width - dp(8)))
-            floatY = floatY.coerceIn(0, maxOf(0, screenHeight - view.height - dp(8)))
-            updateFloatPosition(view)
+            snapToNearestEdge(view, animate = false)
         }
 
         if (animate) {
@@ -444,11 +487,53 @@ class OverlayService : Service() {
         windowManager.updateViewLayout(view, params)
     }
 
+    private fun snapToNearestEdge(view: View, animate: Boolean) {
+        if (view.width <= 0 || view.height <= 0) return
+        val params = view.layoutParams as WindowManager.LayoutParams
+        dockOnRight = params.x + view.width / 2 >= screenWidth / 2
+        val targetX = if (dockOnRight) {
+            (screenWidth - view.width - dp(8)).coerceAtLeast(0)
+        } else {
+            dp(8)
+        }
+        val targetY = params.y.coerceIn(
+            dp(8),
+            maxOf(dp(8), screenHeight - view.height - dp(8))
+        )
+        collapsedAnchorY = targetY
+        snapAnimator?.cancel()
+        if (!animate) {
+            floatX = targetX
+            floatY = targetY
+            updateFloatPosition(view)
+            return
+        }
+
+        val startX = params.x
+        val startY = params.y
+        snapAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = SNAP_DURATION
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animator ->
+                val progress = animator.animatedValue as Float
+                val currentParams = view.layoutParams as? WindowManager.LayoutParams
+                    ?: return@addUpdateListener
+                currentParams.x = (startX + (targetX - startX) * progress).toInt()
+                currentParams.y = (startY + (targetY - startY) * progress).toInt()
+                runCatching { windowManager.updateViewLayout(view, currentParams) }
+                floatX = currentParams.x
+                floatY = currentParams.y
+            }
+            start()
+        }
+    }
+
     private fun buildControllerView(): LinearLayout {
+        clearAllArmed = false
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_overlay_panel)
-            minimumWidth = dp(280)
+            minimumWidth = dp(292)
             setPadding(dp(16), dp(16), dp(16), dp(16))
             elevation = resources.getDimension(R.dimen.overlay_elevation)
             alpha = controllerAlpha
@@ -459,23 +544,16 @@ class OverlayService : Service() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val collapseChip = TextView(this).apply {
-            text = getString(R.string.overlay_collapse_label)
-            setTextColor(color(R.color.on_primary_container))
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedDrawable(
-                fillColor = color(R.color.primary_container),
-                strokeColor = color(R.color.accent_dark),
-                radiusDp = 14f
-            )
-            setPadding(dp(11), dp(7), dp(11), dp(7))
+        val collapseButton = buildActionButton(
+            iconRes = R.drawable.ic_overlay_collapse,
+            contentDescriptionRes = R.string.overlay_collapse_label
+        ).apply {
             setOnClickListener { showCollapsedHandle() }
         }
 
         val title = TextView(this).apply {
             text = getString(R.string.overlay_eyebrow)
-            setTextColor(color(R.color.on_primary_container))
+            setTextColor(color(R.color.text_primary))
             textSize = 12f
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.08f
@@ -490,7 +568,7 @@ class OverlayService : Service() {
             setOnClickListener { closeController() }
         }
 
-        header.addView(collapseChip)
+        header.addView(collapseButton)
         header.addView(title)
         header.addView(closeButton)
 
@@ -522,6 +600,15 @@ class OverlayService : Service() {
         }
         clearButtonView = clearButton
 
+        val clearAllButton = buildActionButton(
+            iconRes = R.drawable.ic_overlay_clear_all,
+            contentDescriptionRes = R.string.overlay_clear_all_button_desc
+        ).apply {
+            setColorFilter(color(R.color.danger))
+            setOnClickListener { clearAllPoints() }
+        }
+        clearAllButtonView = clearAllButton
+
         val playButton = buildActionButton(
             iconRes = R.drawable.ic_overlay_play,
             contentDescriptionRes = R.string.overlay_play_button_desc,
@@ -547,6 +634,8 @@ class OverlayService : Service() {
         buttonRow.addView(addButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(clearButton)
+        buttonRow.addView(spacerView())
+        buttonRow.addView(clearAllButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(playButton)
         buttonRow.addView(spacerView())
@@ -592,7 +681,7 @@ class OverlayService : Service() {
         primary: Boolean = false
     ) =
         ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             adjustViewBounds = true
             setPadding(dp(10), dp(10), dp(10), dp(10))
@@ -608,7 +697,7 @@ class OverlayService : Service() {
         }
 
     private fun spacerView() = View(this).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(8), dp(1))
+        layoutParams = LinearLayout.LayoutParams(dp(6), dp(1))
     }
 
     private fun showPickerOverlay() {
@@ -715,6 +804,45 @@ class OverlayService : Service() {
         Toast.makeText(this, R.string.point_removed_toast, Toast.LENGTH_SHORT).show()
     }
 
+    private fun clearAllPoints() {
+        if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) return
+        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
+            Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!clearAllArmed) {
+            clearAllArmed = true
+            clearAllButtonView?.background = roundedDrawable(
+                fillColor = color(R.color.error_container),
+                strokeColor = color(R.color.danger),
+                radiusDp = 22f,
+                shape = GradientDrawable.OVAL
+            )
+            Toast.makeText(this, R.string.clear_all_confirm, Toast.LENGTH_SHORT).show()
+            clearAllButtonView?.postDelayed(
+                { resetClearAllConfirmation() },
+                CLEAR_CONFIRM_DURATION
+            )
+            return
+        }
+
+        AutoTapperConfig.clearPoints(this)
+        resetClearAllConfirmation()
+        broadcastPointsChanged()
+        refreshControllerState()
+        refreshMarkers()
+        Toast.makeText(this, R.string.clear_all_done, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun resetClearAllConfirmation() {
+        clearAllArmed = false
+        clearAllButtonView?.background = ContextCompat.getDrawable(
+            this,
+            R.drawable.bg_circular_button
+        )
+        clearAllButtonView?.setColorFilter(color(R.color.danger))
+    }
+
     private fun toggleClicking() {
         if (pendingAction == AutoTapperConfig.PENDING_STOP) return
         if (pendingAction == AutoTapperConfig.PENDING_PAUSE) {
@@ -759,7 +887,7 @@ class OverlayService : Service() {
 
         collapsedHandleView?.apply {
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
-            setColorFilter(color(R.color.on_primary))
+            setColorFilter(color(R.color.primary))
             scaleX = if (isClicking) 1.08f else 1f
             scaleY = if (isClicking) 1.08f else 1f
         }
@@ -788,6 +916,11 @@ class OverlayService : Service() {
             isEnabled = hasPoint && !sessionActive
             alpha = if (isEnabled) 1f else 0.45f
         }
+        clearAllButtonView?.apply {
+            isEnabled = hasPoint && !sessionActive
+            alpha = if (isEnabled) 1f else 0.45f
+        }
+        if (!hasPoint || sessionActive) resetClearAllConfirmation()
         stopButtonView?.apply {
             isEnabled = sessionActive && pendingAction != AutoTapperConfig.PENDING_STOP
             alpha = if (isEnabled) 1f else 0.45f
@@ -1032,5 +1165,7 @@ class OverlayService : Service() {
         private const val NOTIFICATION_CHANNEL_ID = "autotapper_overlay_controller"
         private const val NOTIFICATION_ID = 1001
         private const val ANIMATION_DURATION = 250L
+        private const val SNAP_DURATION = 220L
+        private const val CLEAR_CONFIRM_DURATION = 2_500L
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.AutoTapper" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.AutoTapper.Base" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
@@ -36,12 +36,15 @@
         <item name="colorControlHighlight">@color/control_highlight</item>
 
         <item name="android:statusBarColor">@color/bg_page</item>
-        <item name="android:navigationBarColor">@color/bg_page</item>
+        <item name="android:navigationBarColor">@color/primary_dark</item>
         <item name="android:windowBackground">@color/bg_page</item>
-        <item name="android:windowLightStatusBar">false</item>
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.AutoTapper.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.AutoTapper.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.AutoTapper.Large</item>
+    </style>
+
+    <style name="Theme.AutoTapper" parent="Theme.AutoTapper.Base">
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="ShapeAppearance.AutoTapper.Small" parent="ShapeAppearance.Material3.SmallComponent">
@@ -57,15 +60,6 @@
     <style name="ShapeAppearance.AutoTapper.Large" parent="ShapeAppearance.Material3.LargeComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">24dp</item>
-    </style>
-
-    <style name="ThemeOverlay.AutoTapper.Floating" parent="ThemeOverlay.Material3.DynamicColors.Dark">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorOnPrimary">@color/on_primary</item>
-        <item name="colorSurfaceContainer">@color/surface_container</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-        <item name="colorOutline">@color/outline</item>
     </style>
 
 </resources>

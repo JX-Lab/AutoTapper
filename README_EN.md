@@ -31,6 +31,9 @@ It can cycle through multiple saved points in order, which is useful for authori
 - **Per-point controls:** configure delay, consecutive tap count, and press duration for every point.
 - **Point management and migration:** inspect or remove individual points and migrate legacy single-point data.
 - **Large-screen and bilingual UI:** phone and `w600dp` layouts with English and Simplified Chinese.
+- **Dual themes and system mode:** choose Light, Night, or Follow System; the app, overlay, and icons update together.
+- **Edge-snapping controller:** drag and release to dock to the nearest edge; the default position is the right edge.
+- **Built-in tutorial:** the top-right help button explains permissions, point capture, playback, deletion, and collapse.
 - **Update alerts:** check the latest release from this repository and ignore a selected version.
 
 ## Compatibility and downloads
@@ -59,10 +62,10 @@ AutoTapper does not read screen text or upload saved points. Coordinates and set
 ## Quick start
 
 1. Download and install an APK from [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest).
-2. Grant overlay permission and enable the AutoTapper accessibility service.
+2. Grant overlay permission and enable the AutoTapper accessibility service; granted rows disappear automatically.
 3. Configure global timing; optionally edit delay, tap count, and press duration for each point.
-4. Open the floating controller, tap each target position, and finish point selection.
-5. Start from the side controller; use the same button to pause or resume, and the separate stop button to end and reset progress.
+4. Open the floating controller. It does not start point capture; press the plus icon only when you want to add points.
+5. Use play to start, the same icon to pause or resume, and the square to stop and reset. The trash removes the last point; clear-all requires a second confirmation tap.
 
 <p align="center">
   <img src="./assets/readme/workflow.svg" width="100%" alt="AutoTapper workflow: select points, configure timing, start, tap in sequence, and check for updates.">

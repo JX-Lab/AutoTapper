@@ -17,7 +17,7 @@
     <string name="points_subtitle">控制器会从上到下依次点击这些位置。</string>
     <string name="points_count_badge">%1$d 个点</string>
     <string name="points_empty">还没有点位。打开悬浮控制器，点击 + 连续添加点击位置。</string>
-    <string name="open_controller">打开悬浮控制器取点</string>
+    <string name="open_controller">打开悬浮控制器</string>
     <string name="point_item_index">点 %1$d</string>
     <string name="point_item_coords">(%1$d, %2$d)</string>
     <string name="delete_point_desc">删除该点位</string>
@@ -86,6 +86,27 @@
     <string name="stop_clicking">停止点击</string>
     <string name="usage_note">使用说明：打开悬浮控制器后，侧边会出现可拖动的悬浮球，拖动它可调整位置。展开控制器：+ 连续添加点位、DEL 删除最后一个点位、GO 开始点击、STOP 停止。点击进行时，正在点击的点位会闪烁高亮。</string>
     <string name="usage_title">快速提示</string>
+    <string name="theme_button_desc">选择应用主题</string>
+    <string name="tutorial_button_desc">打开使用教程</string>
+    <string name="theme_dialog_title">应用主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">日间主题</string>
+    <string name="theme_dark">夜间主题</string>
+
+    <string name="tutorial_eyebrow">快速上手</string>
+    <string name="tutorial_title">如何使用 AutoTapper</string>
+    <string name="tutorial_intro">悬浮控制器不会自行点击；先由你选择点位，再明确开始运行。</string>
+    <string name="tutorial_step_1_title">1 · 授予必要权限</string>
+    <string name="tutorial_step_1_body">开启悬浮窗和 AutoTapper 无障碍服务。已授权的条目会消失，权限失效后才重新出现。</string>
+    <string name="tutorial_step_2_title">2 · 打开悬浮控制器</string>
+    <string name="tutorial_step_2_body">主界面按钮只负责打开控制器，不会自动进入取点模式。</string>
+    <string name="tutorial_step_3_title">3 · 添加点位</string>
+    <string name="tutorial_step_3_body">点击加号，再依次触摸目标位置；完成后点击顶部紧凑栏里的对勾图标。</string>
+    <string name="tutorial_step_4_title">4 · 运行与控制</string>
+    <string name="tutorial_step_4_body">播放用于开始，同一图标可暂停或继续；方块用于停止并重置；垃圾桶删除最后一点，清空全部需要连续确认两次。</string>
+    <string name="tutorial_step_5_title">5 · 移动与收起</string>
+    <string name="tutorial_step_5_body">拖动控制器或悬浮球后会自动吸附最近边缘；箭头图标用于收起，× 用于关闭。</string>
+    <string name="tutorial_done">知道了</string>
 
     <string name="overlay_permission_required">需要先授予悬浮窗权限。</string>
     <string name="overlay_started">悬浮控制器已显示，可在任意应用中使用。</string>
@@ -147,12 +168,15 @@
     <string name="overlay_controller_title">悬浮控制器</string>
     <string name="overlay_eyebrow">AUTOTAPPER · LIVE</string>
     <string name="overlay_add_button_desc">添加点位</string>
-    <string name="overlay_clear_button_desc">删除点位</string>
+    <string name="overlay_clear_button_desc">删除最后一个点位</string>
+    <string name="overlay_clear_all_button_desc">清空所有点位</string>
     <string name="overlay_play_button_desc">开始点击</string>
     <string name="overlay_pause_button_desc">暂停点击</string>
     <string name="overlay_resume_button_desc">继续点击</string>
     <string name="overlay_stop_button_desc">停止点击</string>
     <string name="overlay_close_button_desc">关闭悬浮控制器</string>
+    <string name="clear_all_confirm">请再次点击“清空全部”以删除所有点位。</string>
+    <string name="clear_all_done">已清空所有点击点位。</string>
     <string name="overlay_handle_idle">AT</string>
     <string name="overlay_handle_running">RUN</string>
     <string name="overlay_points_template">%1$d 个：%2$s</string>

@@ -16,9 +16,9 @@
                 android:startX="12"
                 android:startY="10"
                 android:type="linear">
-                <item android:color="#17243A" android:offset="0" />
-                <item android:color="#101828" android:offset="0.55" />
-                <item android:color="#0C111B" android:offset="1" />
+                <item android:color="@color/hero_start" android:offset="0" />
+                <item android:color="@color/hero_center" android:offset="0.55" />
+                <item android:color="@color/hero_end" android:offset="1" />
             </gradient>
         </aapt:attr>
     </path>
@@ -27,52 +27,52 @@
     <path
         android:fillColor="#00000000"
         android:pathData="M27,73 C34,56 43,43 56,39 C69,35 82,43 82,57 C82,72 69,81 54,80 C42,79 33,75 27,73"
-        android:strokeColor="#FF9A4D"
+        android:strokeColor="@color/accent"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:strokeWidth="4" />
 
     <!-- Point 1. -->
     <path
-        android:fillColor="#101828"
+        android:fillColor="@color/surface_container"
         android:pathData="M27,73 m-7,0 a7,7 0,1 0,14,0 a7,7 0,1 0,-14,0"
-        android:strokeColor="#FF7A1A"
+        android:strokeColor="@color/primary"
         android:strokeWidth="3" />
     <path
-        android:fillColor="#FFB067"
+        android:fillColor="@color/on_primary_container"
         android:pathData="M27,73 m-2.5,0 a2.5,2.5 0,1 0,5,0 a2.5,2.5 0,1 0,-5,0" />
 
     <!-- Point 2. -->
     <path
-        android:fillColor="#101828"
+        android:fillColor="@color/surface_container"
         android:pathData="M56,39 m-7,0 a7,7 0,1 0,14,0 a7,7 0,1 0,-14,0"
-        android:strokeColor="#FF7A1A"
+        android:strokeColor="@color/primary"
         android:strokeWidth="3" />
     <path
-        android:fillColor="#FFB067"
+        android:fillColor="@color/on_primary_container"
         android:pathData="M56,39 m-2.5,0 a2.5,2.5 0,1 0,5,0 a2.5,2.5 0,1 0,-5,0" />
 
     <!-- Active point 3. -->
     <path
-        android:fillColor="#2B211D"
+        android:fillColor="@color/primary_container"
         android:pathData="M82,57 m-13,0 a13,13 0,1 0,26,0 a13,13 0,1 0,-26,0"
-        android:strokeColor="#FF7A1A"
+        android:strokeColor="@color/primary"
         android:strokeAlpha="0.42"
         android:strokeWidth="2" />
     <path
-        android:fillColor="#101828"
+        android:fillColor="@color/surface_container"
         android:pathData="M82,57 m-8,0 a8,8 0,1 0,16,0 a8,8 0,1 0,-16,0"
-        android:strokeColor="#FF8A3D"
+        android:strokeColor="@color/accent"
         android:strokeWidth="3" />
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="@color/text_primary"
         android:pathData="M82,57 m-3,0 a3,3 0,1 0,6,0 a3,3 0,1 0,-6,0" />
 
     <!-- Loop direction cue. -->
     <path
         android:fillColor="#00000000"
         android:pathData="M46,75 L54,80 L47,86"
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="@color/text_primary"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:strokeWidth="3" />

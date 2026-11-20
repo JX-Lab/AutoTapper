@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- Added System, Light, and Night themes with theme-aware app and overlay icons.
+- Added edge snapping and right-edge default placement for the floating controller.
+- Simplified opening behavior: the main button opens the controller without starting point capture.
+- Added separate delete-last and two-step clear-all controls.
+- Replaced overlay text controls with compact icon buttons and fixed picker-button overflow.
+- Permission rows now disappear when access is granted and return only when access is lost.
+- Added an in-app tutorial from the top-right help button.
+
 ## 1.2.0
 
 - Redesigned the app and floating controller around the night-sky orange brand system.

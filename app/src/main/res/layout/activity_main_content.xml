@@ -49,6 +49,27 @@
                     android:text="@string/screen_title"
                     android:textAppearance="@style/Text.AutoTapper.Headline" />
             </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btn_theme"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_circular_button"
+                android:contentDescription="@string/theme_button_desc"
+                android:padding="9dp"
+                android:src="@drawable/ic_theme"
+                app:tint="@color/text_secondary" />
+
+            <ImageView
+                android:id="@+id/btn_tutorial"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_circular_button"
+                android:contentDescription="@string/tutorial_button_desc"
+                android:padding="9dp"
+                android:src="@drawable/ic_help"
+                app:tint="@color/text_secondary" />
         </LinearLayout>
 
         <TextView
@@ -87,6 +108,7 @@
 
     <!-- Readiness -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_permissions"
         style="@style/Card.AutoTapper"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -112,6 +134,7 @@
                 android:textAppearance="@style/Text.AutoTapper.Caption" />
 
             <LinearLayout
+                android:id="@+id/row_overlay_permission"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
@@ -146,6 +169,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/row_accessibility_permission"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"

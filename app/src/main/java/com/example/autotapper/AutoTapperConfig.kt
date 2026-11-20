@@ -15,6 +15,11 @@ object AutoTapperConfig {
     const val KEY_CONTROLLER_ALPHA = "controller_alpha"
     const val KEY_PROFILES = "automation_profiles"
     const val KEY_ACTIVE_PROFILE_ID = "active_profile_id"
+    const val KEY_THEME_MODE = "theme_mode"
+
+    const val THEME_SYSTEM = "system"
+    const val THEME_LIGHT = "light"
+    const val THEME_DARK = "dark"
 
     const val KEY_UPDATE_IGNORED_VERSION = "update_ignored_version"
     const val KEY_UPDATE_NOTIFIED_VERSION = "update_notified_version"
@@ -93,6 +98,10 @@ object AutoTapperConfig {
         return updated
     }
 
+    fun clearPoints(context: Context) {
+        savePoints(context, emptyList())
+    }
+
     fun removePointAt(context: Context, index: Int): List<TapPoint> {
         val points = loadPoints(context)
         val updated = if (index in points.indices) {
@@ -125,6 +134,16 @@ object AutoTapperConfig {
 
     fun getControllerAlpha(context: Context): Float =
         prefs(context).getFloat(KEY_CONTROLLER_ALPHA, 0.9f).coerceIn(0.3f, 1f)
+
+    fun getThemeMode(context: Context): String =
+        prefs(context).getString(KEY_THEME_MODE, THEME_SYSTEM) ?: THEME_SYSTEM
+
+    fun saveThemeMode(context: Context, mode: String) {
+        val safeMode = mode.takeIf {
+            it == THEME_SYSTEM || it == THEME_LIGHT || it == THEME_DARK
+        } ?: THEME_SYSTEM
+        prefs(context).edit().putString(KEY_THEME_MODE, safeMode).apply()
+    }
 
     fun loadProfiles(context: Context): List<AutomationProfile> {
         val raw = prefs(context).getString(KEY_PROFILES, null) ?: return emptyList()

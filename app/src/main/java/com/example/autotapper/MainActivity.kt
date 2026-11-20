@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.DefaultItemAnimator
@@ -40,6 +41,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvProfileName: TextView
     private lateinit var btnProfileSave: MaterialButton
     private lateinit var btnProfileDelete: View
+    private lateinit var permissionCard: View
+    private lateinit var overlayPermissionRow: View
+    private lateinit var accessibilityPermissionRow: View
 
     private var pointReceiverRegistered = false
     private var isCheckingUpdate = false
@@ -57,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applyThemePreference()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -77,6 +82,9 @@ class MainActivity : AppCompatActivity() {
         tvProfileName = findViewById(R.id.tv_profile_name)
         btnProfileSave = findViewById(R.id.btn_profile_save)
         btnProfileDelete = findViewById(R.id.btn_profile_delete)
+        permissionCard = findViewById(R.id.card_permissions)
+        overlayPermissionRow = findViewById(R.id.row_overlay_permission)
+        accessibilityPermissionRow = findViewById(R.id.row_accessibility_permission)
 
         pointsAdapter = PointListAdapter(
             onEdit = { index -> showPointEditor(index) },
@@ -97,6 +105,10 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.btn_check_update).setOnClickListener {
             startUpdateCheck(silent = false)
+        }
+        findViewById<View>(R.id.btn_theme).setOnClickListener { showThemeDialog() }
+        findViewById<View>(R.id.btn_tutorial).setOnClickListener {
+            startActivity(Intent(this, TutorialActivity::class.java))
         }
         findViewById<View>(R.id.btn_profile_select).setOnClickListener {
             showProfileSelector()
@@ -168,17 +180,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
+        val overlayGranted = PermissionUtils.isOverlayPermissionGranted(this)
+        val accessibilityGranted = PermissionUtils.isAccessibilityServiceEnabled(
+            this,
+            AutoClickService::class.java
+        )
+        overlayPermissionRow.visibility = if (overlayGranted) View.GONE else View.VISIBLE
+        accessibilityPermissionRow.visibility =
+            if (accessibilityGranted) View.GONE else View.VISIBLE
+        permissionCard.visibility =
+            if (overlayGranted && accessibilityGranted) View.GONE else View.VISIBLE
         updatePermissionRow(
             dotOverlay,
             tvOverlayState,
             R.string.overlay_permission_state,
-            PermissionUtils.isOverlayPermissionGranted(this)
+            overlayGranted
         )
         updatePermissionRow(
             dotAccessibility,
             tvAccessibilityState,
             R.string.accessibility_permission_state,
-            PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)
+            accessibilityGranted
         )
         loadAndShowPoints()
         refreshActiveProfile()
@@ -450,17 +472,44 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val hasPoints = AutoTapperConfig.hasPoints(this)
         val intent = Intent(this, OverlayService::class.java).apply {
             action = AutoTapperConfig.ACTION_SHOW_CONTROLLER
-            putExtra(AutoTapperConfig.EXTRA_START_PICKING, !hasPoints)
+            putExtra(AutoTapperConfig.EXTRA_START_PICKING, false)
         }
         ContextCompat.startForegroundService(this, intent)
-        Toast.makeText(
-            this,
-            if (hasPoints) R.string.overlay_started else R.string.overlay_started_pick,
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(this, R.string.overlay_started, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyThemePreference() {
+        val mode = when (AutoTapperConfig.getThemeMode(this)) {
+            AutoTapperConfig.THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+            AutoTapperConfig.THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(mode)
+    }
+
+    private fun showThemeDialog() {
+        val modes = arrayOf(
+            AutoTapperConfig.THEME_SYSTEM,
+            AutoTapperConfig.THEME_LIGHT,
+            AutoTapperConfig.THEME_DARK
+        )
+        val labels = arrayOf(
+            getString(R.string.theme_system),
+            getString(R.string.theme_light),
+            getString(R.string.theme_dark)
+        )
+        val checked = modes.indexOf(AutoTapperConfig.getThemeMode(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.theme_dialog_title)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                AutoTapperConfig.saveThemeMode(this, modes[which])
+                dialog.dismiss()
+                applyThemePreference()
+            }
+            .setNegativeButton(R.string.cancel_capture, null)
+            .show()
     }
 
     private fun startUpdateCheck(silent: Boolean) {
