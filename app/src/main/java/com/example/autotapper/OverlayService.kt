@@ -548,6 +548,7 @@ class OverlayService : Service() {
             iconRes = R.drawable.ic_overlay_collapse,
             contentDescriptionRes = R.string.overlay_collapse_label
         ).apply {
+            scaleX = if (dockOnRight) -1f else 1f
             setOnClickListener { showCollapsedHandle() }
         }
 
