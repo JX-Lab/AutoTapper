@@ -10,6 +10,7 @@
   <a href="https://github.com/JX-Lab/AutoTapper/actions/workflows/android.yml"><img src="https://github.com/JX-Lab/AutoTapper/actions/workflows/android.yml/badge.svg" alt="Android build"></a>
   <a href="https://github.com/JX-Lab/AutoTapper/releases/latest"><img src="https://img.shields.io/github/v/release/JX-Lab/AutoTapper?display_name=tag&include_prereleases" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 7.0+">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-FF7A1A" alt="MIT License"></a>
   <a href="https://github.com/JX-Lab/AutoTapper/pulls"><img src="https://img.shields.io/badge/PRs-welcome-FF7A1A" alt="PRs welcome"></a>
 </p>
 
@@ -25,6 +26,9 @@ AutoTapper 是一个轻量的 Android 自动点击工具。它通过系统**无�
 - **可拖动悬浮控制器**：在任意应用中通过 `+`、`DEL`、`GO`、`STOP` 完成操作。
 - **点位可视化**：半透明圆点展示每个位置，当前点击点会闪烁高亮。
 - **点击节奏控制**：配置基础间隔和随机附加延迟，最低间隔为 100 ms。
+- **暂停与继续**：保留当前点位、点内连点进度和已完成轮数，随后从原位置继续。
+- **多套方案**：保存、覆盖、切换和删除完整的点位与点击参数组合。
+- **点位级参数**：每个点可独立设置等待时间、连续点击次数和按压时长。
 - **点位管理与迁移**：主界面逐条查看、删除点位，并自动迁移旧版单点配置。
 - **大屏适配与双语界面**：支持普通手机、`w600dp` 大屏布局以及中英文系统语言。
 - **更新提醒**：检查本仓库最新 Release，并允许忽略指定版本。
@@ -56,9 +60,9 @@ AutoTapper 不读取界面文本，不上传点击点位；点位和参数保存
 
 1. 从 [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest) 下载并安装 APK。
 2. 打开应用，依次授予悬浮窗权限并启用 AutoTapper 无障碍服务。
-3. 配置基础间隔、随机延迟和点击轮数。
+3. 配置全局点击节奏；需要时可编辑单个点位的间隔、连点次数和按压时长。
 4. 点击“打开悬浮控制器取点”，在目标位置依次轻触，完成后退出取点模式。
-5. 展开侧边控制器并点击 `GO`；需要停止时点击 `STOP`。
+5. 展开侧边控制器开始点击；同一按钮可暂停或继续，独立停止按钮会结束并重置进度。
 
 <p align="center">
   <img src="./assets/readme/workflow.svg" width="100%" alt="AutoTapper 工作流程：取点、配置、开始、循环点击、更新提醒。">
@@ -148,11 +152,11 @@ Bug 报告、文档改进、翻译和功能 PR 都很欢迎。开始前请阅读
 
 ## 已知限制
 
-- 不支持滑动、长按或复杂动作编排。
+- 不支持滑动或复杂动作编排。
 - 点击坐标不会自动适配目标应用布局变化或屏幕旋转。
 - 定时启动功能仍在讨论中，尚未包含电商平台服务器时间同步。
 
-## 更新日志与授权
+## 更新日志与许可证
 
 - 完整更新记录见 [CHANGELOG.md](./CHANGELOG.md)。
-- 本仓库当前未包含明确的开源许可证；在许可证确定前，默认保留所有权利。复用或分发代码前请先联系维护者。
+- 本项目采用 [MIT License](./LICENSE) 开源，可在保留版权与许可声明的前提下使用、修改、分发和再许可。
