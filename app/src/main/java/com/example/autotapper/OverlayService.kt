@@ -19,6 +19,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
+import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -29,12 +30,14 @@ import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.appcompat.widget.TooltipCompat
 import androidx.appcompat.app.AppCompatDelegate
 import kotlin.math.abs
@@ -50,8 +53,9 @@ class OverlayService : Service() {
     private var playButtonView: ImageView? = null
     private var addButtonView: ImageView? = null
     private var clearButtonView: ImageView? = null
-    private var clearAllButtonView: ImageView? = null
     private var stopButtonView: ImageView? = null
+    private var settingsButtonView: ImageView? = null
+    private var settingsPanelView: View? = null
     private var pickerView: View? = null
     private var pickerCounterView: TextView? = null
     private val pointMarkers: MutableList<View> = mutableListOf()
@@ -75,6 +79,7 @@ class OverlayService : Service() {
     private var dockOnRight = true
     private var snapAnimator: ValueAnimator? = null
     private var clearAllArmed = false
+    private var settingsExpanded = false
 
     // 控制器透明度（0.3 ~ 1.0）
     private var controllerAlpha = 0.9f
@@ -172,6 +177,7 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        applyLanguagePreference()
         applyThemePreference()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         controllerAlpha = AutoTapperConfig.getControllerAlpha(this)
@@ -186,6 +192,15 @@ class OverlayService : Service() {
             else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         }
         AppCompatDelegate.setDefaultNightMode(mode)
+    }
+
+    private fun applyLanguagePreference() {
+        val tags = when (AutoTapperConfig.getLanguageMode(this)) {
+            AutoTapperConfig.LANGUAGE_CHINESE -> AutoTapperConfig.LANGUAGE_CHINESE
+            AutoTapperConfig.LANGUAGE_ENGLISH -> AutoTapperConfig.LANGUAGE_ENGLISH
+            else -> ""
+        }
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tags))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -237,9 +252,9 @@ class OverlayService : Service() {
         playButtonView = null
         addButtonView = null
         clearButtonView = null
-        clearAllButtonView = null
-        clearAllArmed = false
         stopButtonView = null
+        settingsButtonView = null
+        settingsPanelView = null
         runCatching { unregisterReceiver(serviceReceiver) }
         super.onDestroy()
     }
@@ -366,8 +381,11 @@ class OverlayService : Service() {
         playButtonView = null
         addButtonView = null
         clearButtonView = null
-        clearAllButtonView = null
+        clearAllArmed = false
         stopButtonView = null
+        settingsButtonView = null
+        settingsPanelView = null
+        settingsExpanded = false
         hideMarkers()
 
         val x = if (dockOnRight) screenWidth - dp(48) - dp(8) else dp(8)
@@ -530,6 +548,7 @@ class OverlayService : Service() {
 
     private fun buildControllerView(): LinearLayout {
         clearAllArmed = false
+        val isPicking = pickerView != null
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_overlay_panel)
@@ -549,11 +568,16 @@ class OverlayService : Service() {
             contentDescriptionRes = R.string.overlay_collapse_label
         ).apply {
             scaleX = if (dockOnRight) -1f else 1f
+            isEnabled = !isPicking
+            alpha = if (isPicking) 0.4f else 1f
             setOnClickListener { showCollapsedHandle() }
         }
 
         val title = TextView(this).apply {
-            text = getString(R.string.overlay_eyebrow)
+            text = getString(
+                if (isPicking) R.string.overlay_picking_eyebrow
+                else R.string.overlay_eyebrow
+            )
             setTextColor(color(R.color.text_primary))
             textSize = 12f
             typeface = Typeface.DEFAULT_BOLD
@@ -569,9 +593,27 @@ class OverlayService : Service() {
             setOnClickListener { closeController() }
         }
 
+        val settingsButton = buildActionButton(
+            iconRes = R.drawable.ic_overlay_settings,
+            contentDescriptionRes = R.string.overlay_settings_button_desc
+        ).apply {
+            setColorFilter(
+                color(if (settingsExpanded) R.color.primary else R.color.text_primary)
+            )
+            setOnClickListener { toggleSettingsPanel() }
+        }
+        settingsButtonView = settingsButton
+
         header.addView(collapseButton)
         header.addView(title)
+        if (!isPicking) header.addView(settingsButton)
         header.addView(closeButton)
+
+        root.addView(header)
+        if (isPicking) {
+            root.addView(buildPickerControls())
+            return root
+        }
 
         val buttonRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -587,6 +629,7 @@ class OverlayService : Service() {
                 if (!isClicking && !isPaused &&
                     pendingAction == AutoTapperConfig.PENDING_NONE
                 ) {
+                    if (settingsExpanded) toggleSettingsPanel()
                     showPickerOverlay()
                 }
             }
@@ -600,15 +643,6 @@ class OverlayService : Service() {
             setOnClickListener { removeLastPoint() }
         }
         clearButtonView = clearButton
-
-        val clearAllButton = buildActionButton(
-            iconRes = R.drawable.ic_overlay_clear_all,
-            contentDescriptionRes = R.string.overlay_clear_all_button_desc
-        ).apply {
-            setColorFilter(color(R.color.danger))
-            setOnClickListener { clearAllPoints() }
-        }
-        clearAllButtonView = clearAllButton
 
         val playButton = buildActionButton(
             iconRes = R.drawable.ic_overlay_play,
@@ -624,19 +658,13 @@ class OverlayService : Service() {
             contentDescriptionRes = R.string.overlay_stop_button_desc
         ).apply {
             setColorFilter(color(R.color.danger))
-            setOnClickListener {
-                sendBroadcast(
-                    Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName)
-                )
-            }
+            setOnClickListener { handleStopOrClearAll() }
         }
         stopButtonView = stopButton
 
         buttonRow.addView(addButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(clearButton)
-        buttonRow.addView(spacerView())
-        buttonRow.addView(clearAllButton)
         buttonRow.addView(spacerView())
         buttonRow.addView(playButton)
         buttonRow.addView(spacerView())
@@ -669,10 +697,13 @@ class OverlayService : Service() {
         }
         pointsTextView = pointsView
 
-        root.addView(header)
         root.addView(buttonRow)
         root.addView(statusView)
         root.addView(pointsView)
+        val settingsPanel = buildSettingsPanel()
+        settingsPanel.visibility = if (settingsExpanded) View.VISIBLE else View.GONE
+        settingsPanelView = settingsPanel
+        root.addView(settingsPanel)
         return root
     }
 
@@ -701,19 +732,243 @@ class OverlayService : Service() {
         layoutParams = LinearLayout.LayoutParams(dp(6), dp(1))
     }
 
-    private fun showPickerOverlay() {
-        if (pickerView != null) {
-            return
+    private fun buildPickerControls(): LinearLayout {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(12), 0, 0)
+        }
+        val counter = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            setTextColor(color(R.color.on_primary_container))
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_badge)
+            setPadding(dp(11), dp(8), dp(11), dp(8))
+        }
+        pickerCounterView = counter
+        updatePickerCounter()
+        val cancel = buildActionButton(
+            R.drawable.ic_overlay_close,
+            R.string.cancel_capture
+        ).apply { setOnClickListener { cancelPicking() } }
+        val done = buildActionButton(
+            R.drawable.ic_overlay_done,
+            R.string.finish_capture,
+            primary = true
+        ).apply { setOnClickListener { finishPicking() } }
+        row.addView(counter)
+        row.addView(spacerView())
+        row.addView(cancel)
+        row.addView(spacerView())
+        row.addView(done)
+        return row
+    }
+
+    private fun buildSettingsPanel(): LinearLayout {
+        val prefs = AutoTapperConfig.prefs(this)
+        val interval = buildSettingField(
+            R.string.overlay_setting_interval,
+            prefs.getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).toString()
+        )
+        val random = buildSettingField(
+            R.string.overlay_setting_random,
+            prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).toString()
+        )
+        val rounds = buildSettingField(
+            R.string.overlay_setting_rounds,
+            prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).toString()
+        )
+        val hold = buildSettingField(
+            R.string.overlay_setting_hold,
+            AutoTapperConfig.getDefaultHoldDuration(this).toString()
+        )
+        val pointRepeat = buildSettingField(
+            R.string.overlay_setting_repeat,
+            AutoTapperConfig.getDefaultPointRepeat(this).toString()
+        )
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedDrawable(
+                fillColor = color(R.color.surface_variant),
+                strokeColor = color(R.color.outline_variant),
+                radiusDp = 14f
+            )
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(12) }
+        }
+        panel.addView(TextView(this).apply {
+            text = getString(R.string.overlay_settings_title)
+            setTextColor(color(R.color.text_primary))
+            textSize = 14f
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        panel.addView(buildSettingRow(interval.first, random.first))
+        panel.addView(buildSettingRow(hold.first, pointRepeat.first))
+        panel.addView(buildSettingRow(rounds.first, null))
+        panel.addView(TextView(this).apply {
+            text = getString(R.string.overlay_settings_apply_all)
+            setTextColor(color(R.color.text_secondary))
+            textSize = 11f
+            setPadding(0, dp(8), 0, 0)
+        })
+        panel.addView(LinearLayout(this).apply {
+            gravity = Gravity.END
+            setPadding(0, dp(8), 0, 0)
+            addView(
+                buildActionButton(
+                    R.drawable.ic_overlay_done,
+                    R.string.overlay_settings_save_desc,
+                    primary = true
+                ).apply {
+                    setOnClickListener {
+                        saveOverlaySettings(
+                            interval.second,
+                            random.second,
+                            rounds.second,
+                            hold.second,
+                            pointRepeat.second
+                        )
+                    }
+                }
+            )
+        })
+        return panel
+    }
+
+    private fun buildSettingField(labelRes: Int, value: String): Pair<LinearLayout, EditText> {
+        val input = EditText(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(44)
+            )
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(value)
+            setSelectAllOnFocus(true)
+            setTextColor(color(R.color.text_primary))
+            setHintTextColor(color(R.color.text_secondary))
+            textSize = 14f
+            gravity = Gravity.CENTER_VERTICAL
+            background = roundedDrawable(
+                fillColor = color(R.color.surface_container),
+                strokeColor = color(R.color.outline),
+                radiusDp = 10f
+            )
+            setPadding(dp(10), 0, dp(10), 0)
+        }
+        val field = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            addView(TextView(this@OverlayService).apply {
+                text = getString(labelRes)
+                setTextColor(color(R.color.text_secondary))
+                textSize = 11f
+                setPadding(0, 0, 0, dp(4))
+            })
+            addView(input)
+        }
+        return field to input
+    }
+
+    private fun buildSettingRow(first: View, second: View?): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(10), 0, 0)
+            addView(first)
+            if (second != null) {
+                addView(View(this@OverlayService).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(8), 1)
+                })
+                addView(second)
+            } else {
+                addView(View(this@OverlayService).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        1,
+                        1f
+                    )
+                })
+            }
         }
 
+    private fun saveOverlaySettings(
+        intervalInput: EditText,
+        randomInput: EditText,
+        roundsInput: EditText,
+        holdInput: EditText,
+        pointRepeatInput: EditText
+    ) {
+        val interval = intervalInput.text.toString().toLongOrNull()
+        val random = randomInput.text.toString().toLongOrNull()
+        val rounds = roundsInput.text.toString().toIntOrNull()
+        val hold = holdInput.text.toString().toLongOrNull()
+        val repeats = pointRepeatInput.text.toString().toIntOrNull()
+        val valid = interval != null && interval >= 100L &&
+            random != null && random >= 0L && rounds != null && rounds >= 0 &&
+            hold != null && hold in AutoTapperConfig.MIN_HOLD_DURATION_MS..
+            AutoTapperConfig.MAX_HOLD_DURATION_MS && repeats != null &&
+            repeats in 1..AutoTapperConfig.MAX_POINT_REPEAT
+        if (!valid) {
+            Toast.makeText(this, R.string.overlay_settings_invalid, Toast.LENGTH_LONG).show()
+            return
+        }
+        AutoTapperConfig.saveBaseConfig(this, interval!!, random!!, rounds!!)
+        AutoTapperConfig.saveDefaultPointSettings(this, hold!!, repeats!!)
+        AutoTapperConfig.applyDefaultPointSettingsToAll(this)
+        broadcastPointsChanged()
+        refreshControllerState()
+        Toast.makeText(this, R.string.overlay_settings_saved, Toast.LENGTH_SHORT).show()
+        toggleSettingsPanel()
+    }
+
+    private fun toggleSettingsPanel() {
+        if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) return
+        val panel = settingsPanelView ?: return
+        settingsExpanded = !settingsExpanded
+        settingsButtonView?.setColorFilter(
+            color(if (settingsExpanded) R.color.primary else R.color.text_primary)
+        )
+        if (settingsExpanded) {
+            panel.visibility = View.VISIBLE
+            panel.alpha = 0f
+            panel.translationY = -dp(8).toFloat()
+            panel.animate().alpha(1f).translationY(0f).setDuration(200L).start()
+            panel.post {
+                controllerView?.let { snapToNearestEdge(it, animate = true) }
+            }
+        } else {
+            panel.animate()
+                .alpha(0f)
+                .translationY((-dp(8)).toFloat())
+                .setDuration(160L)
+                .withEndAction {
+                    panel.visibility = View.GONE
+                    controllerView?.post {
+                        controllerView?.let { snapToNearestEdge(it, animate = true) }
+                    }
+                }
+                .start()
+        }
+    }
+
+    private fun showPickerOverlay() {
+        if (pickerView != null) return
+
         sessionStartCount = AutoTapperConfig.loadPoints(this).size
-
-        // Service 上下文没有 MaterialComponents 主题，MaterialButton 膨胀会崩溃，需包一层主题
-        val themedContext = android.view.ContextThemeWrapper(this, R.style.Theme_AutoTapper)
-        val view = LayoutInflater.from(themedContext).inflate(R.layout.overlay_layout, null)
-        pickerCounterView = view.findViewById(R.id.tv_picker_counter)
-        updatePickerCounter()
-
+        settingsExpanded = false
+        val view = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
         view.findViewById<View>(R.id.capture_root).setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 addPickedPoint(event.rawX.toInt(), event.rawY.toInt())
@@ -722,17 +977,10 @@ class OverlayService : Service() {
                 true
             }
         }
-        view.findViewById<View>(R.id.btn_finish_capture).setOnClickListener {
-            finishPicking()
-        }
-        view.findViewById<View>(R.id.btn_cancel_capture).setOnClickListener {
-            cancelPicking()
-        }
-
-        view.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_picker).alpha = controllerAlpha
-
         windowManager.addView(view, fullscreenLayoutParams())
         pickerView = view
+        rebuildExpandedControllerOnTop()
+        updatePickerCounter()
         refreshMarkers()
     }
 
@@ -753,7 +1001,7 @@ class OverlayService : Service() {
 
     private fun finishPicking() {
         dismissPickerOverlay()
-        refreshControllerState()
+        rebuildExpandedControllerOnTop()
         refreshMarkers()
         Toast.makeText(
             this,
@@ -763,15 +1011,19 @@ class OverlayService : Service() {
     }
 
     private fun cancelPicking() {
+        rollbackPickedPoints()
+        dismissPickerOverlay()
+        rebuildExpandedControllerOnTop()
+        refreshMarkers()
+        Toast.makeText(this, R.string.picking_cancelled_toast, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun rollbackPickedPoints() {
         val all = AutoTapperConfig.loadPoints(this)
         if (all.size > sessionStartCount) {
             AutoTapperConfig.savePoints(this, all.take(sessionStartCount))
         }
         broadcastPointsChanged()
-        dismissPickerOverlay()
-        refreshControllerState()
-        refreshMarkers()
-        Toast.makeText(this, R.string.picking_cancelled_toast, Toast.LENGTH_SHORT).show()
     }
 
     private fun updatePickerCounter() {
@@ -779,6 +1031,20 @@ class OverlayService : Service() {
             R.string.picker_counter_template,
             AutoTapperConfig.loadPoints(this).size
         )
+    }
+
+    private fun rebuildExpandedControllerOnTop() {
+        removeViewSafely(controllerView)
+        controllerView = null
+        controllerStatusView = null
+        pointsTextView = null
+        playButtonView = null
+        addButtonView = null
+        clearButtonView = null
+        stopButtonView = null
+        settingsButtonView = null
+        settingsPanelView = null
+        showExpandedController(animate = false)
     }
 
     private fun broadcastPointsChanged(x: Int = -1, y: Int = -1) {
@@ -813,14 +1079,14 @@ class OverlayService : Service() {
         }
         if (!clearAllArmed) {
             clearAllArmed = true
-            clearAllButtonView?.background = roundedDrawable(
+            stopButtonView?.background = roundedDrawable(
                 fillColor = color(R.color.error_container),
                 strokeColor = color(R.color.danger),
                 radiusDp = 22f,
                 shape = GradientDrawable.OVAL
             )
             Toast.makeText(this, R.string.clear_all_confirm, Toast.LENGTH_SHORT).show()
-            clearAllButtonView?.postDelayed(
+            stopButtonView?.postDelayed(
                 { resetClearAllConfirmation() },
                 CLEAR_CONFIRM_DURATION
             )
@@ -837,11 +1103,19 @@ class OverlayService : Service() {
 
     private fun resetClearAllConfirmation() {
         clearAllArmed = false
-        clearAllButtonView?.background = ContextCompat.getDrawable(
+        stopButtonView?.background = ContextCompat.getDrawable(
             this,
             R.drawable.bg_circular_button
         )
-        clearAllButtonView?.setColorFilter(color(R.color.danger))
+        stopButtonView?.setColorFilter(color(R.color.danger))
+    }
+
+    private fun handleStopOrClearAll() {
+        if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) {
+            sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+        } else {
+            clearAllPoints()
+        }
     }
 
     private fun toggleClicking() {
@@ -871,6 +1145,7 @@ class OverlayService : Service() {
             return
         }
 
+        if (settingsExpanded) toggleSettingsPanel()
         sendBroadcast(Intent(AutoTapperConfig.ACTION_START_CLICKING).setPackage(packageName))
     }
 
@@ -878,7 +1153,6 @@ class OverlayService : Service() {
         controllerAlpha = AutoTapperConfig.getControllerAlpha(this)
         controllerView?.alpha = controllerAlpha
         collapsedHandleView?.alpha = controllerAlpha
-        pickerView?.findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_picker)?.alpha = controllerAlpha
     }
 
     private fun refreshControllerState() {
@@ -913,18 +1187,28 @@ class OverlayService : Service() {
             isEnabled = !sessionActive
             alpha = if (isEnabled) 1f else 0.45f
         }
-        clearButtonView?.apply {
-            isEnabled = hasPoint && !sessionActive
+        settingsButtonView?.apply {
+            isEnabled = !sessionActive
             alpha = if (isEnabled) 1f else 0.45f
         }
-        clearAllButtonView?.apply {
+        clearButtonView?.apply {
             isEnabled = hasPoint && !sessionActive
             alpha = if (isEnabled) 1f else 0.45f
         }
         if (!hasPoint || sessionActive) resetClearAllConfirmation()
         stopButtonView?.apply {
-            isEnabled = sessionActive && pendingAction != AutoTapperConfig.PENDING_STOP
+            isEnabled = (sessionActive && pendingAction != AutoTapperConfig.PENDING_STOP) ||
+                (!sessionActive && hasPoint)
             alpha = if (isEnabled) 1f else 0.45f
+            val clearing = !sessionActive
+            setImageResource(
+                if (clearing) R.drawable.ic_overlay_clear_all else R.drawable.ic_overlay_stop
+            )
+            contentDescription = getString(
+                if (clearing) R.string.overlay_clear_all_button_desc
+                else R.string.overlay_stop_button_desc
+            )
+            TooltipCompat.setTooltipText(this, contentDescription)
         }
         controllerStatusView?.text = buildControllerStatusText()
         pointsTextView?.text = buildControllerPointsText()
@@ -1134,6 +1418,7 @@ class OverlayService : Service() {
     }
 
     private fun closeController() {
+        if (pickerView != null) rollbackPickedPoints()
         stopClickingIfNeeded()
         stopSelf()
     }

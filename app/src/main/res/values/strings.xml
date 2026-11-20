@@ -92,6 +92,12 @@
     <string name="theme_system">Follow system</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Night</string>
+    <string name="language_button">文/A</string>
+    <string name="language_button_desc">Choose app language</string>
+    <string name="language_dialog_title">App language</string>
+    <string name="language_system">Follow system</string>
+    <string name="language_chinese">简体中文</string>
+    <string name="language_english">English</string>
 
     <string name="tutorial_eyebrow">QUICK START</string>
     <string name="tutorial_title">How to use AutoTapper</string>
@@ -103,7 +109,7 @@
     <string name="tutorial_step_3_title">3 · Add points</string>
     <string name="tutorial_step_3_body">Tap the plus icon, touch each target position, then use the check icon in the compact top bar to finish.</string>
     <string name="tutorial_step_4_title">4 · Run and control</string>
-    <string name="tutorial_step_4_body">Play starts, the same icon pauses or resumes, the square stops and resets, the trash removes the last point, and clear-all requires two taps.</string>
+    <string name="tutorial_step_4_body">Play starts and pauses. The trash removes the last point. While running, the square stops and resets progress; while idle, it becomes clear-all and requires two taps.</string>
     <string name="tutorial_step_5_title">5 · Move and collapse</string>
     <string name="tutorial_step_5_body">Drag the controller or ball; it snaps to the nearest edge. Use the chevron icon to collapse and × to close.</string>
     <string name="tutorial_done">Got it</string>
@@ -167,6 +173,18 @@
     <string name="overlay_collapse_label">Collapse</string>
     <string name="overlay_controller_title">Floating Controller</string>
     <string name="overlay_eyebrow">AUTOTAPPER · LIVE</string>
+    <string name="overlay_picking_eyebrow">AUTOTAPPER · PICKING</string>
+    <string name="overlay_settings_button_desc">Expand controller settings</string>
+    <string name="overlay_settings_title">Quick settings</string>
+    <string name="overlay_setting_interval">Interval ms</string>
+    <string name="overlay_setting_random">Random ms</string>
+    <string name="overlay_setting_rounds">Rounds (0 = ∞)</string>
+    <string name="overlay_setting_hold">Hold ms</string>
+    <string name="overlay_setting_repeat">Taps per point</string>
+    <string name="overlay_settings_apply_all">Saving applies hold duration and tap count to all current and newly added points.</string>
+    <string name="overlay_settings_save_desc">Save quick settings</string>
+    <string name="overlay_settings_invalid">Check the values: interval ≥ 100, random/rounds ≥ 0, hold 20–10000, taps 1–9999.</string>
+    <string name="overlay_settings_saved">Controller settings saved and applied.</string>
     <string name="overlay_add_button_desc">Add tap point</string>
     <string name="overlay_clear_button_desc">Delete last tap point</string>
     <string name="overlay_clear_all_button_desc">Clear all tap points</string>

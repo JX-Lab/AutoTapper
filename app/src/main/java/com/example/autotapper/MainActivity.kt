@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applyLanguagePreference()
         applyThemePreference()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -107,6 +109,7 @@ class MainActivity : AppCompatActivity() {
             startUpdateCheck(silent = false)
         }
         findViewById<View>(R.id.btn_theme).setOnClickListener { showThemeDialog() }
+        findViewById<View>(R.id.btn_language).setOnClickListener { showLanguageDialog() }
         findViewById<View>(R.id.btn_tutorial).setOnClickListener {
             startActivity(Intent(this, TutorialActivity::class.java))
         }
@@ -507,6 +510,38 @@ class MainActivity : AppCompatActivity() {
                 AutoTapperConfig.saveThemeMode(this, modes[which])
                 dialog.dismiss()
                 applyThemePreference()
+            }
+            .setNegativeButton(R.string.cancel_capture, null)
+            .show()
+    }
+
+    private fun applyLanguagePreference() {
+        val tags = when (AutoTapperConfig.getLanguageMode(this)) {
+            AutoTapperConfig.LANGUAGE_CHINESE -> AutoTapperConfig.LANGUAGE_CHINESE
+            AutoTapperConfig.LANGUAGE_ENGLISH -> AutoTapperConfig.LANGUAGE_ENGLISH
+            else -> ""
+        }
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tags))
+    }
+
+    private fun showLanguageDialog() {
+        val modes = arrayOf(
+            AutoTapperConfig.LANGUAGE_SYSTEM,
+            AutoTapperConfig.LANGUAGE_CHINESE,
+            AutoTapperConfig.LANGUAGE_ENGLISH
+        )
+        val labels = arrayOf(
+            getString(R.string.language_system),
+            getString(R.string.language_chinese),
+            getString(R.string.language_english)
+        )
+        val checked = modes.indexOf(AutoTapperConfig.getLanguageMode(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.language_dialog_title)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                AutoTapperConfig.saveLanguageMode(this, modes[which])
+                dialog.dismiss()
+                applyLanguagePreference()
             }
             .setNegativeButton(R.string.cancel_capture, null)
             .show()

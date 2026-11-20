@@ -31,7 +31,7 @@ It can cycle through multiple saved points in order, which is useful for authori
 - **Per-point controls:** configure delay, consecutive tap count, and press duration for every point.
 - **Point management and migration:** inspect or remove individual points and migrate legacy single-point data.
 - **Large-screen and bilingual UI:** phone and `w600dp` layouts with English and Simplified Chinese.
-- **Dual themes and system mode:** choose Light, Night, or Follow System; the app, overlay, and icons update together.
+- **Theme and language controls:** choose Light, Night, or Follow System, and switch between Simplified Chinese, English, or the system language.
 - **Edge-snapping controller:** drag and release to dock to the nearest edge; the default position is the right edge.
 - **Built-in tutorial:** the top-right help button explains permissions, point capture, playback, deletion, and collapse.
 - **Update alerts:** check the latest release from this repository and ignore a selected version.

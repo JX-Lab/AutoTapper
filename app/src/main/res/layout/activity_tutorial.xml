@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -26,22 +27,27 @@
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:layout_marginBottom="10dp" android:background="@drawable/bg_badge" android:contentDescription="@null" android:padding="12dp" android:src="@drawable/ic_tutorial_permission" app:tint="@color/primary" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_1_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_1_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:layout_marginBottom="10dp" android:background="@drawable/bg_badge" android:contentDescription="@null" android:padding="12dp" android:src="@drawable/ic_floating_handle" app:tint="@color/primary" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_2_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_2_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:layout_marginBottom="10dp" android:background="@drawable/bg_badge" android:contentDescription="@null" android:padding="12dp" android:src="@drawable/ic_overlay_add" app:tint="@color/primary" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_3_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_3_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:layout_marginBottom="10dp" android:background="@drawable/bg_badge" android:contentDescription="@null" android:padding="12dp" android:src="@drawable/ic_overlay_play" app:tint="@color/primary" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_4_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_4_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
+            <ImageView android:layout_width="48dp" android:layout_height="48dp" android:layout_marginBottom="10dp" android:background="@drawable/bg_badge" android:contentDescription="@null" android:padding="12dp" android:src="@drawable/ic_overlay_collapse" app:tint="@color/primary" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_5_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_5_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>

@@ -16,10 +16,16 @@ object AutoTapperConfig {
     const val KEY_PROFILES = "automation_profiles"
     const val KEY_ACTIVE_PROFILE_ID = "active_profile_id"
     const val KEY_THEME_MODE = "theme_mode"
+    const val KEY_LANGUAGE_MODE = "language_mode"
+    const val KEY_DEFAULT_HOLD_DURATION_MS = "default_hold_duration_ms"
+    const val KEY_DEFAULT_POINT_REPEAT = "default_point_repeat"
 
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"
     const val THEME_DARK = "dark"
+    const val LANGUAGE_SYSTEM = "system"
+    const val LANGUAGE_CHINESE = "zh-CN"
+    const val LANGUAGE_ENGLISH = "en"
 
     const val KEY_UPDATE_IGNORED_VERSION = "update_ignored_version"
     const val KEY_UPDATE_NOTIFIED_VERSION = "update_notified_version"
@@ -78,7 +84,12 @@ object AutoTapperConfig {
     }
 
     fun addPoint(context: Context, x: Int, y: Int): List<TapPoint> {
-        val points = loadPoints(context) + TapPoint(x, y)
+        val points = loadPoints(context) + TapPoint(
+            x = x,
+            y = y,
+            repeatCount = getDefaultPointRepeat(context),
+            holdDurationMs = getDefaultHoldDuration(context)
+        )
         savePoints(context, points)
         return points
     }
@@ -143,6 +154,46 @@ object AutoTapperConfig {
             it == THEME_SYSTEM || it == THEME_LIGHT || it == THEME_DARK
         } ?: THEME_SYSTEM
         prefs(context).edit().putString(KEY_THEME_MODE, safeMode).apply()
+    }
+
+    fun getLanguageMode(context: Context): String =
+        prefs(context).getString(KEY_LANGUAGE_MODE, LANGUAGE_SYSTEM) ?: LANGUAGE_SYSTEM
+
+    fun saveLanguageMode(context: Context, mode: String) {
+        val safeMode = mode.takeIf {
+            it == LANGUAGE_SYSTEM || it == LANGUAGE_CHINESE || it == LANGUAGE_ENGLISH
+        } ?: LANGUAGE_SYSTEM
+        prefs(context).edit().putString(KEY_LANGUAGE_MODE, safeMode).apply()
+    }
+
+    fun getDefaultHoldDuration(context: Context): Long =
+        prefs(context).getLong(
+            KEY_DEFAULT_HOLD_DURATION_MS,
+            TapPoint.DEFAULT_HOLD_DURATION_MS
+        ).coerceIn(MIN_HOLD_DURATION_MS, MAX_HOLD_DURATION_MS)
+
+    fun getDefaultPointRepeat(context: Context): Int =
+        prefs(context).getInt(KEY_DEFAULT_POINT_REPEAT, 1).coerceIn(1, MAX_POINT_REPEAT)
+
+    fun saveDefaultPointSettings(context: Context, holdDurationMs: Long, repeatCount: Int) {
+        prefs(context).edit()
+            .putLong(
+                KEY_DEFAULT_HOLD_DURATION_MS,
+                holdDurationMs.coerceIn(MIN_HOLD_DURATION_MS, MAX_HOLD_DURATION_MS)
+            )
+            .putInt(KEY_DEFAULT_POINT_REPEAT, repeatCount.coerceIn(1, MAX_POINT_REPEAT))
+            .apply()
+    }
+
+    fun applyDefaultPointSettingsToAll(context: Context) {
+        val hold = getDefaultHoldDuration(context)
+        val repeats = getDefaultPointRepeat(context)
+        savePoints(
+            context,
+            loadPoints(context).map { point ->
+                point.copy(holdDurationMs = hold, repeatCount = repeats)
+            }
+        )
     }
 
     fun loadProfiles(context: Context): List<AutomationProfile> {

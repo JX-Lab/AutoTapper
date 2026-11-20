@@ -3,6 +3,7 @@
 ## 1.3.0
 
 - Added System, Light, and Night themes with theme-aware app and overlay icons.
+- Added an in-app language selector for System, Simplified Chinese, and English.
 - Added edge snapping and right-edge default placement for the floating controller.
 - Simplified opening behavior: the main button opens the controller without starting point capture.
 - Added separate delete-last and two-step clear-all controls.
