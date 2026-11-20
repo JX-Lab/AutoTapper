@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">AutoTapper</string>
     <string name="screen_eyebrow">自动点击控制台</string>
-    <string name="screen_title">AutoTapper 自动连点器</string>
+    <string name="screen_title">AutoTapper</string>
     <string name="screen_subtitle">支持多点击顺序轮流点击：在任意应用中通过可拖动的悬浮控制器连续取点、开始点击和停止点击。</string>
     <string name="version_label">版本 v%1$s</string>
     <string name="check_update">检查更新</string>
@@ -21,17 +21,58 @@
     <string name="point_item_index">点 %1$d</string>
     <string name="point_item_coords">(%1$d, %2$d)</string>
     <string name="delete_point_desc">删除该点位</string>
+    <string name="edit_point_desc">编辑该点位</string>
     <string name="point_deleted_toast">已删除点位 %1$d。</string>
+    <string name="point_updated_toast">已更新点位 %1$d。</string>
+    <string name="point_detail_template">间隔 %1$s · 连点 %2$d · 按压 %3$d ms</string>
+    <string name="point_delay_global">全局</string>
+    <string name="point_delay_value">%1$d ms</string>
+    <string name="edit_point_title">编辑点位 %1$d · (%2$d, %3$d)</string>
+    <string name="point_delay_label">每次点击后等待（毫秒）</string>
+    <string name="point_delay_help">填 0 表示沿用全局基础间隔。</string>
+    <string name="point_repeat_label">该点连续点击次数</string>
+    <string name="point_repeat_help">在进入下一点前，连续点击该点 1–9999 次。</string>
+    <string name="point_hold_label">按压时长（毫秒）</string>
+    <string name="point_hold_help">40 毫秒为普通点击；增大数值可形成长按。</string>
+    <string name="point_settings_invalid">请输入不小于 0 的间隔、1–9999 次连点，以及 20–10000 毫秒的按压时长。</string>
+    <string name="save_changes">保存修改</string>
+
+    <string name="profiles_title">已保存方案</string>
+    <string name="profiles_subtitle">保存当前点位与节奏，之后可以快速切换整套配置。</string>
+    <string name="profile_active_label">当前方案</string>
+    <string name="profile_none">尚未保存的当前配置</string>
+    <string name="profile_modified">%1$s · 已修改</string>
+    <string name="profile_unsaved_title">方案存在未保存修改</string>
+    <string name="profile_unsaved_message">切换方案前，是否保存“%1$s”的当前修改？</string>
+    <string name="profile_unsaved_current_message">当前配置尚未保存，切换方案前是否先保存？</string>
+    <string name="profile_save_and_switch">保存并切换</string>
+    <string name="profile_discard_and_switch">放弃并切换</string>
+    <string name="profile_overwrite_title">覆盖已保存方案？</string>
+    <string name="profile_overwrite_message">已经存在名为“%1$s”的方案，是否用当前配置覆盖？</string>
+    <string name="profile_name_help">使用原名称可更新方案，输入新名称则另存一份。</string>
+    <string name="profile_select">切换方案</string>
+    <string name="profile_save">保存方案</string>
+    <string name="profile_update">更新方案</string>
+    <string name="profile_delete">删除当前方案</string>
+    <string name="profile_name_hint">方案名称</string>
+    <string name="profile_save_title">保存当前配置</string>
+    <string name="profile_select_title">选择方案</string>
+    <string name="profile_delete_title">删除方案？</string>
+    <string name="profile_delete_message">确定删除“%1$s”吗？当前屏幕上的点位不会被清空。</string>
+    <string name="profile_saved">已保存方案“%1$s”。</string>
+    <string name="profile_loaded">已载入方案“%1$s”。</string>
+    <string name="profile_deleted">方案已删除。</string>
+    <string name="profile_list_empty">还没有保存方案。</string>
 
     <string name="config_title">点击配置</string>
     <string name="config_subtitle">一次设定点击节奏，悬浮控制器会立即使用。</string>
-    <string name="config_intro">多点模式会按点位顺序轮流点击。实际等待时间 = 基础间隔 + 0 到随机附加延迟之间的随机值。</string>
+    <string name="config_intro">多点模式会依次执行每个点位，并包含点位自己的连点次数和按压时长。实际等待 = 点位或全局间隔 + 随机延迟。</string>
     <string name="interval_label">基础间隔</string>
     <string name="interval_help">单位毫秒，表示每次点击之间至少等待多久。建议先从 300 到 800 之间尝试。</string>
     <string name="random_extra_label">随机附加延迟</string>
     <string name="random_extra_help">单位毫秒，每次在基础间隔上额外随机增加 0 到该数值之间的延迟。填 0 表示固定节奏。</string>
     <string name="repeat_count_label">点击轮数</string>
-    <string name="repeat_count_help">每轮按顺序把每个点位各点一次。填 1 = 每个点位各点 1 次；填 10 = 完整跑 10 轮；填 0 = 一直点击直到手动停止。</string>
+    <string name="repeat_count_help">每轮会完整执行所有点位及各自的连点次数；填 0 表示一直运行到手动停止。</string>
     <string name="controller_alpha_label">悬浮窗透明度</string>
     <string name="controller_alpha_value">%1$.0f%%</string>
     <string name="config_summary_title">当前配置摘要</string>
@@ -85,6 +126,10 @@
     <string name="accessibility_service_description">用于在任意应用中执行自动点击手势。启用后只会在你手动点击“开始点击”或悬浮控制器上的 GO 时工作。</string>
     <string name="accessibility_ready">AutoTapper 无障碍服务已连接。</string>
     <string name="click_started">自动点击已启动。</string>
+    <string name="click_paused">自动点击已暂停。</string>
+    <string name="click_pause_pending">将在当前按压结束后暂停…</string>
+    <string name="click_resumed">自动点击已继续。</string>
+    <string name="click_stop_pending">将在当前按压结束后停止…</string>
     <string name="click_stopped">自动点击已停止。</string>
     <string name="click_completed">自动点击完成，共执行 %1$d 轮。</string>
     <string name="click_cancelled">手势被系统取消，已停止自动点击。</string>
@@ -94,13 +139,18 @@
     <string name="overlay_notification_title">AutoTapper 悬浮控制器运行中</string>
     <string name="overlay_notification_idle">控制器已就绪，可在任意应用中展开使用。</string>
     <string name="overlay_notification_running">自动点击进行中，可展开悬浮控制器停止。</string>
+    <string name="overlay_notification_paused">自动点击已暂停，可展开悬浮控制器继续。</string>
+    <string name="overlay_notification_pause_pending">已请求暂停，正在等待当前按压结束。</string>
+    <string name="overlay_notification_stopping">已请求停止，正在等待当前按压结束。</string>
     <string name="overlay_notification_stop">关闭控制器</string>
     <string name="overlay_collapse_label">收起</string>
     <string name="overlay_controller_title">悬浮控制器</string>
-    <string name="overlay_eyebrow">AUTOTAPPER · 实时控制</string>
+    <string name="overlay_eyebrow">AUTOTAPPER · LIVE</string>
     <string name="overlay_add_button_desc">添加点位</string>
     <string name="overlay_clear_button_desc">删除点位</string>
     <string name="overlay_play_button_desc">开始点击</string>
+    <string name="overlay_pause_button_desc">暂停点击</string>
+    <string name="overlay_resume_button_desc">继续点击</string>
     <string name="overlay_stop_button_desc">停止点击</string>
     <string name="overlay_close_button_desc">关闭悬浮控制器</string>
     <string name="overlay_handle_idle">AT</string>
@@ -111,6 +161,10 @@
     <string name="overlay_repeat_infinite">无限</string>
     <string name="overlay_repeat_finite">%1$d 轮</string>
     <string name="overlay_state_running">运行中</string>
+    <string name="overlay_state_paused">已暂停</string>
+    <string name="overlay_state_pause_pending">暂停中…</string>
+    <string name="overlay_state_stopping">停止中…</string>
     <string name="overlay_state_idle">待命</string>
-    <string name="overlay_status_template">状态：%1$s · 间隔 %2$d-%3$d ms · 轮数：%4$s</string>
+    <string name="overlay_status_template">状态：%1$s · 等待 %2$d-%3$d ms · 按压 %6$d ms\n轮数：%4$s · 已完成 %5$d</string>
+    <string name="overlay_current_point_progress">点位 %1$d · 第 %2$d/%3$d 次</string>
 </resources>

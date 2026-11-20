@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class PointListAdapter(
+    private val onEdit: (Int) -> Unit,
     private val onDelete: (Int) -> Unit
 ) : RecyclerView.Adapter<PointListAdapter.PointViewHolder>() {
 
@@ -40,6 +41,25 @@ class PointListAdapter(
         val context = holder.itemView.context
         holder.tvIndex.text = context.getString(R.string.point_item_index, position + 1)
         holder.tvCoords.text = context.getString(R.string.point_item_coords, point.x, point.y)
+        val delayText = if (point.delayMs > 0L) {
+            context.getString(R.string.point_delay_value, point.delayMs)
+        } else {
+            context.getString(R.string.point_delay_global)
+        }
+        holder.tvDetails.text = context.getString(
+            R.string.point_detail_template,
+            delayText,
+            point.repeatCount,
+            point.holdDurationMs
+        )
+        holder.btnEdit.setOnClickListener {
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) onEdit(currentPosition)
+        }
+        holder.itemView.setOnClickListener {
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) onEdit(currentPosition)
+        }
         holder.btnDelete.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
             if (currentPosition != RecyclerView.NO_POSITION) {
@@ -51,6 +71,8 @@ class PointListAdapter(
     class PointViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvIndex: TextView = view.findViewById(R.id.tv_point_index)
         val tvCoords: TextView = view.findViewById(R.id.tv_point_coords)
+        val tvDetails: TextView = view.findViewById(R.id.tv_point_details)
+        val btnEdit: ImageView = view.findViewById(R.id.btn_point_edit)
         val btnDelete: ImageView = view.findViewById(R.id.btn_point_delete)
     }
 }

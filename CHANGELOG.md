@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Redesigned the app and floating controller around the night-sky orange brand system.
+- Added true pause and resume while preserving point, repeat, and round progress.
+- Added named profiles for saving, updating, switching, and deleting complete setups.
+- Added per-point delay, consecutive tap count, and press duration settings.
+- Added unsaved-profile protection and explicit pending states for long-press pause/stop.
+- Restricted dynamic control broadcasts to this application.
+
 ## 1.1.1
 
 - Redesigned the main screen and floating controller.

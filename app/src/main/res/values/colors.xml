@@ -40,4 +40,5 @@
     <color name="control_highlight">#33FF8A3D</color>
     <color name="overlay_bar">#F20B1120</color>
     <color name="scrim">#B30C111B</color>
+    <color name="picker_scrim">#260C111B</color>
 </resources>

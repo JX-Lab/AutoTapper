@@ -10,6 +10,7 @@
   <a href="https://github.com/JX-Lab/AutoTapper/actions/workflows/android.yml"><img src="https://github.com/JX-Lab/AutoTapper/actions/workflows/android.yml/badge.svg" alt="Android build"></a>
   <a href="https://github.com/JX-Lab/AutoTapper/releases/latest"><img src="https://img.shields.io/github/v/release/JX-Lab/AutoTapper?display_name=tag&include_prereleases" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 7.0+">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-FF7A1A" alt="MIT License"></a>
   <a href="https://github.com/JX-Lab/AutoTapper/pulls"><img src="https://img.shields.io/badge/PRs-welcome-FF7A1A" alt="PRs welcome"></a>
 </p>
 
@@ -25,6 +26,9 @@ It can cycle through multiple saved points in order, which is useful for authori
 - **Draggable floating controller:** use `+`, `DEL`, `GO`, and `STOP` from any app.
 - **Visible tap points:** translucent markers show saved positions and pulse at the active point.
 - **Timing controls:** base interval plus an optional random extra delay; minimum interval is 100 ms.
+- **Pause and resume:** preserve the current point, per-point tap progress, and completed rounds.
+- **Saved profiles:** save, update, switch, and delete complete point-and-timing setups.
+- **Per-point controls:** configure delay, consecutive tap count, and press duration for every point.
 - **Point management and migration:** inspect or remove individual points and migrate legacy single-point data.
 - **Large-screen and bilingual UI:** phone and `w600dp` layouts with English and Simplified Chinese.
 - **Update alerts:** check the latest release from this repository and ignore a selected version.
@@ -56,9 +60,9 @@ AutoTapper does not read screen text or upload saved points. Coordinates and set
 
 1. Download and install an APK from [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest).
 2. Grant overlay permission and enable the AutoTapper accessibility service.
-3. Configure the base interval, random delay, and number of rounds.
+3. Configure global timing; optionally edit delay, tap count, and press duration for each point.
 4. Open the floating controller, tap each target position, and finish point selection.
-5. Expand the side controller and press `GO`; press `STOP` to stop immediately.
+5. Start from the side controller; use the same button to pause or resume, and the separate stop button to end and reset progress.
 
 <p align="center">
   <img src="./assets/readme/workflow.svg" width="100%" alt="AutoTapper workflow: select points, configure timing, start, tap in sequence, and check for updates.">
@@ -148,11 +152,11 @@ Bug reports, documentation improvements, translations, and focused feature pull 
 
 ## Known limitations
 
-- Swipe, long-press, and complex action sequences are not supported.
+- Swipe and complex action sequences are not supported.
 - Saved coordinates do not adapt automatically to layout changes or screen rotation.
 - Scheduled start is still under discussion; e-commerce server-time synchronization is not implemented.
 
 ## Changelog and license
 
 - See [CHANGELOG.md](./CHANGELOG.md) for release history.
-- This repository does not currently include an explicit open-source license. All rights are reserved by default until a license is added; contact the maintainer before reusing or redistributing the code.
+- AutoTapper is released under the [MIT License](./LICENSE). You may use, modify, distribute, and sublicense it provided that the copyright and permission notices are retained.
