@@ -7,10 +7,10 @@
 - Added edge snapping and right-edge default placement for the floating controller.
 - Simplified opening behavior: the main button opens the controller without starting point capture.
 - Added separate delete-last and stop/clear-all controls; after stopping, the same button clears all points with one tap.
-- The floating controller now collapses automatically when tapping starts, with a flicker-free window transition.
+- The controller now collapses automatically when tapping starts and reuses persistent windows for collapse, expand, and point-picking transitions.
 - Replaced overlay text controls with compact icon buttons and fixed picker-button overflow.
 - Permission rows now disappear when access is granted and return only when access is lost.
-- Added an in-app tutorial from the top-right help button, using real app screenshots for each controller action.
+- Added a concise text-only tutorial from the top-right help button.
 - Expanded every numeric click-setting hint with its valid range and the effect of higher or lower values.
 
 ## 1.2.0

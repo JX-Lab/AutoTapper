@@ -30,22 +30,18 @@
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_1_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
-            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:adjustViewBounds="true" android:layout_marginBottom="12dp" android:contentDescription="@null" android:scaleType="fitCenter" android:src="@drawable/tutorial_controller" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_2_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_2_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
-            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:adjustViewBounds="true" android:layout_marginBottom="12dp" android:contentDescription="@null" android:scaleType="fitCenter" android:src="@drawable/tutorial_points" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_3_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_3_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
-            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:adjustViewBounds="true" android:layout_marginBottom="12dp" android:contentDescription="@null" android:scaleType="fitCenter" android:src="@drawable/tutorial_controls" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_4_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_4_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/bg_status_row" android:orientation="vertical" android:padding="16dp">
-            <ImageView android:layout_width="match_parent" android:layout_height="wrap_content" android:adjustViewBounds="true" android:layout_marginBottom="12dp" android:contentDescription="@null" android:scaleType="fitCenter" android:src="@drawable/tutorial_snap" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/tutorial_step_5_title" android:textAppearance="@style/Text.AutoTapper.Title" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:lineSpacingExtra="3dp" android:text="@string/tutorial_step_5_body" android:textAppearance="@style/Text.AutoTapper.Body" />
         </LinearLayout>

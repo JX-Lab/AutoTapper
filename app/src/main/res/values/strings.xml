@@ -119,7 +119,7 @@
     <string name="tutorial_step_2_title">2 · Open the controller</string>
     <string name="tutorial_step_2_body">The main button only opens the floating controller. It does not enter point-picking mode.</string>
     <string name="tutorial_step_3_title">3 · Add points</string>
-    <string name="tutorial_step_3_body">The translucent gray panel in the screenshot is the controller; the target app is underneath. Tap plus, touch each target, then tap check.</string>
+    <string name="tutorial_step_3_body">In the target app, tap plus on the controller, then touch each position AutoTapper should tap. Tap check when point selection is complete.</string>
     <string name="tutorial_step_4_title">4 · Run and control</string>
     <string name="tutorial_step_4_body">The controller collapses after starting; tap the edge ball to reopen it. Play pauses or resumes, trash removes the last point, and square stops then clears all on its next tap.</string>
     <string name="tutorial_step_5_title">5 · Move and collapse</string>
