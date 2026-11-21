@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var pointReceiverRegistered = false
     private var isCheckingUpdate = false
     private var isLoadingConfig = false
-    private var points: List<TapPoint> = emptyList()
+    private var points: List<AutomationAction> = emptyList()
     private lateinit var pointsAdapter: PointListAdapter
     private lateinit var profilesAdapter: ProfileListAdapter
     private var configExpanded = false
@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadAndShowPoints() {
-        points = AutoTapperConfig.loadPoints(this)
+        points = AutoTapperConfig.loadActions(this)
         pointsAdapter.submitPoints(points)
         val empty = points.isEmpty()
         tvPointsEmpty.visibility = if (empty) View.VISIBLE else View.GONE
@@ -353,13 +353,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun deletePoint(index: Int) {
-        val current = AutoTapperConfig.loadPoints(this)
+        val current = AutoTapperConfig.loadActions(this)
         if (index !in current.indices) {
             return
         }
         sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
         AutoTapperConfig.removePointAt(this, index)
-        points = AutoTapperConfig.loadPoints(this)
+        points = AutoTapperConfig.loadActions(this)
         pointsAdapter.removeItem(index)
         tvPointsEmpty.visibility = if (points.isEmpty()) View.VISIBLE else View.GONE
         rvPoints.visibility = if (points.isEmpty()) View.GONE else View.VISIBLE
@@ -368,7 +368,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showPointEditor(index: Int) {
-        val point = AutoTapperConfig.loadPoints(this).getOrNull(index) ?: return
+        when (val action = AutoTapperConfig.loadActions(this).getOrNull(index) ?: return) {
+            is TapPoint -> showTapEditor(index, action)
+            is GestureAction -> showGestureEditor(index, action)
+        }
+    }
+
+    private fun showTapEditor(index: Int, point: TapPoint) {
         sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
         val view = layoutInflater.inflate(R.layout.dialog_point_settings, null)
         val delayInput = view.findViewById<EditText>(R.id.et_point_delay)
@@ -406,6 +412,60 @@ class MainActivity : AppCompatActivity() {
                         delayMs = delay!!,
                         repeatCount = repeat!!,
                         holdDurationMs = hold!!
+                    )
+                )
+                loadAndShowPoints()
+                sendBroadcast(
+                    Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName)
+                )
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showGestureEditor(index: Int, gesture: GestureAction) {
+        sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
+        val stroke = gesture.primaryStroke ?: return
+        val view = layoutInflater.inflate(R.layout.dialog_gesture_settings, null)
+        val delayInput = view.findViewById<EditText>(R.id.et_gesture_delay)
+        val repeatInput = view.findViewById<EditText>(R.id.et_gesture_repeat)
+        val durationInput = view.findViewById<EditText>(R.id.et_gesture_duration)
+        delayInput.setText(gesture.delayMs.toString())
+        repeatInput.setText(gesture.repeatCount.toString())
+        durationInput.setText(stroke.durationMs.toString())
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.edit_gesture_title, index + 1))
+            .setView(view)
+            .setPositiveButton(R.string.save_changes, null)
+            .setNegativeButton(R.string.cancel_capture, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val delay = delayInput.text.toString().toLongOrNull()
+                val repeat = repeatInput.text.toString().toIntOrNull()
+                val duration = durationInput.text.toString().toLongOrNull()
+                val valid = delay != null && delay >= 0L &&
+                    repeat != null && repeat in 1..AutoTapperConfig.MAX_POINT_REPEAT &&
+                    duration != null && duration in (
+                        AutoTapperConfig.MIN_GESTURE_DURATION_MS..
+                            AutoTapperConfig.MAX_GESTURE_DURATION_MS
+                        )
+                if (!valid) {
+                    Toast.makeText(this, R.string.gesture_settings_invalid, Toast.LENGTH_LONG)
+                        .show()
+                    return@setOnClickListener
+                }
+                AutoTapperConfig.updateActionAt(
+                    this,
+                    index,
+                    gesture.copy(
+                        delayMs = delay!!,
+                        repeatCount = repeat!!,
+                        strokes = gesture.strokes.mapIndexed { strokeIndex, current ->
+                            if (strokeIndex == 0) current.copy(durationMs = duration!!) else current
+                        }
                     )
                 )
                 loadAndShowPoints()
@@ -477,7 +537,7 @@ class MainActivity : AppCompatActivity() {
                 val active = AutoTapperConfig.getActiveProfile(this)
                 dialog.dismiss()
                 if (active?.id == target.id) return@setSingleChoiceItems
-                if (active == null && AutoTapperConfig.loadPoints(this).isNotEmpty()) {
+                if (active == null && AutoTapperConfig.loadActions(this).isNotEmpty()) {
                     AlertDialog.Builder(this)
                         .setTitle(R.string.profile_unsaved_title)
                         .setMessage(R.string.profile_unsaved_current_message)

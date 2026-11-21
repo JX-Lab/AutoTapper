@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="24dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Input.AutoTapper.Outlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/point_delay_label"
+        app:helperText="@string/point_delay_help">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_gesture_delay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLines="1"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Input.AutoTapper.Outlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="@string/gesture_repeat_label"
+        app:helperText="@string/gesture_repeat_help">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_gesture_repeat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLines="1"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Input.AutoTapper.Outlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="@string/gesture_duration_label"
+        app:helperText="@string/gesture_duration_help">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_gesture_duration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:maxLines="1"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

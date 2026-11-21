@@ -2,7 +2,7 @@
     <string name="app_name">AutoTapper</string>
     <string name="screen_eyebrow">AUTOMATION CONSOLE</string>
     <string name="screen_title">AutoTapper</string>
-    <string name="screen_subtitle">Tap multiple points in sequence using a draggable floating controller in any app.</string>
+    <string name="screen_subtitle">Run taps and recorded swipe gestures in sequence from a floating controller in any app.</string>
     <string name="version_label">Version v%1$s</string>
     <string name="check_update">Check for updates</string>
     <string name="status_title">Permission Status</string>
@@ -13,22 +13,31 @@
     <string name="permission_missing">Not enabled</string>
     <string name="grant_permission_button">Open settings</string>
 
-    <string name="points_title">Tap Points</string>
-    <string name="points_subtitle">The controller taps these positions from top to bottom.</string>
-    <string name="points_count_badge">%1$d points</string>
-    <string name="points_empty">No points yet. Open the floating controller and tap + to add positions.</string>
+    <string name="points_title">Action Sequence</string>
+    <string name="points_subtitle">The controller runs taps and gestures from top to bottom.</string>
+    <string name="points_count_badge">%1$d actions</string>
+    <string name="points_empty">No actions yet. Open the controller and tap + to add a tap or swipe.</string>
     <string name="open_controller">Open floating controller</string>
-    <string name="point_item_index">Point %1$d</string>
+    <string name="point_item_index">Action %1$d</string>
     <string name="point_item_coords">(%1$d, %2$d)</string>
-    <string name="delete_point_desc">Delete this point</string>
-    <string name="edit_point_desc">Edit this point</string>
+    <string name="delete_point_desc">Delete this action</string>
+    <string name="edit_point_desc">Edit this action</string>
     <string name="point_deleted_toast">Point %1$d deleted.</string>
     <string name="point_updated_toast">Point %1$d updated.</string>
     <string name="point_detail_template">Delay %1$s · taps %2$d · hold %3$d ms</string>
+    <string name="gesture_item_path">Swipe (%1$d,%2$d) → (%3$d,%4$d)</string>
+    <string name="gesture_item_unknown">Swipe gesture</string>
+    <string name="gesture_detail_template">Delay %1$s · repeats %2$d · duration %3$d ms</string>
+    <string name="edit_gesture_title">Edit gesture action %1$d</string>
+    <string name="gesture_repeat_label">Gesture repeats</string>
+    <string name="gesture_repeat_help">Range: 1–9999. The sequence moves on after these repeats finish.</string>
+    <string name="gesture_duration_label">Gesture duration (ms)</string>
+    <string name="gesture_duration_help">Range: 100–5000 ms. Larger values execute the gesture more slowly.</string>
+    <string name="gesture_settings_invalid">Enter a delay of 0 or more, 1–9999 repeats, and a gesture duration from 100 to 5000 ms.</string>
     <string name="point_delay_global">global</string>
     <string name="point_delay_value">%1$d ms</string>
     <string name="edit_point_title">Edit point %1$d · (%2$d, %3$d)</string>
-    <string name="point_delay_label">Delay after each tap (ms)</string>
+    <string name="point_delay_label">Delay after this action (ms)</string>
     <string name="point_delay_help">Enter 0 to use the global base interval.</string>
     <string name="point_repeat_label">Consecutive taps at this point</string>
     <string name="point_repeat_help">Tap this point 1–9999 times before moving on.</string>
@@ -38,7 +47,7 @@
     <string name="save_changes">Save changes</string>
 
     <string name="profiles_title">Saved Profiles</string>
-    <string name="profiles_subtitle">Save the current points and timing, then switch between setups instantly.</string>
+    <string name="profiles_subtitle">Save the current action sequence and timing, then switch setups instantly.</string>
     <string name="profile_active_label">ACTIVE PROFILE</string>
     <string name="profile_none">Unsaved current setup</string>
     <string name="profile_modified">%1$s · modified</string>
@@ -58,19 +67,19 @@
     <string name="profile_save_title">Save current setup</string>
     <string name="profile_select_title">Choose a profile</string>
     <string name="profile_delete_title">Delete profile?</string>
-    <string name="profile_delete_message">Delete “%1$s”? The current points remain on screen.</string>
+    <string name="profile_delete_message">Delete “%1$s”? The current actions remain on screen.</string>
     <string name="profile_saved">Profile “%1$s” saved.</string>
     <string name="profile_loaded">Profile “%1$s” loaded.</string>
     <string name="profile_deleted">Profile deleted.</string>
     <string name="profile_list_empty">No saved profiles yet.</string>
     <string name="profile_active_short">ACTIVE</string>
     <string name="profile_edit_desc">Load this profile for editing</string>
-    <string name="profile_edit_loaded">“%1$s” loaded. Edit points or settings above, then save.</string>
-    <string name="profile_summary_template">%1$d points · %2$d ms · %3$s</string>
+    <string name="profile_edit_loaded">“%1$s” loaded. Edit actions or settings above, then save.</string>
+    <string name="profile_summary_template">%1$d actions · %2$d ms · %3$s</string>
 
     <string name="config_title">Tap Configuration</string>
     <string name="config_subtitle">Tune the rhythm once; the floating controller uses it instantly.</string>
-    <string name="config_intro">Multi-point mode runs each point in order, including its own tap count and hold duration. Actual wait time = point or global delay + random extra.</string>
+    <string name="config_intro">The action sequence runs taps and gestures in order. Taps keep their count and hold settings; gestures keep repeats and duration. Actual wait = action or global delay + random extra.</string>
     <string name="interval_label">Base interval</string>
     <string name="interval_help">Range: 100 ms or more. Lower values tap faster; 300–800 ms suits most screens, while 1000+ ms is slower but safer.</string>
     <string name="random_extra_label">Random extra delay</string>
@@ -87,7 +96,7 @@
     <string name="point_defaults_applied">Point press duration and tap count applied.</string>
     <string name="point_defaults_invalid">Press duration must be 20–10000 ms and taps must be 1–9999.</string>
     <string name="config_summary_title">Configuration Summary</string>
-    <string name="config_summary_template">Multi-point sequence · %1$d points\nWait after each tap: %2$d–%3$d ms\nRounds: %4$s</string>
+    <string name="config_summary_template">Action sequence · %1$d actions\nWait after each action: %2$d–%3$d ms\nRounds: %4$s</string>
     <string name="config_summary_repeat_infinite">Infinite (until stopped)</string>
     <string name="config_summary_repeat_finite">%1$d rounds</string>
     <string name="config_summary_invalid">Enter valid settings. The base interval must be at least 100 ms, and the random delay and rounds cannot be empty.</string>
@@ -96,7 +105,7 @@
 
     <string name="start_clicking">Start Tapping</string>
     <string name="stop_clicking">Stop Tapping</string>
-    <string name="usage_note">After opening the controller, drag the side handle to reposition it. Expand it to add points with +, remove the last point with DEL, start with GO, and stop with STOP. The active point pulses while tapping.</string>
+    <string name="usage_note">Open the controller and use plus to record taps or swipes; it shrinks to the edge while recording. Play starts or pauses, trash removes the last action, and square stops or clears.</string>
     <string name="usage_title">QUICK GUIDE</string>
     <string name="theme_button_desc">Choose app theme</string>
     <string name="tutorial_button_desc">Open tutorial</string>
@@ -113,15 +122,15 @@
 
     <string name="tutorial_eyebrow">QUICK START</string>
     <string name="tutorial_title">How to use AutoTapper</string>
-    <string name="tutorial_intro">The controller never taps by itself. You choose points first, then explicitly start the run.</string>
+    <string name="tutorial_intro">The controller never acts by itself. Record taps or swipes first, then explicitly start the run.</string>
     <string name="tutorial_step_1_title">1 · Grant required access</string>
     <string name="tutorial_step_1_body">Enable display-over-apps and the AutoTapper accessibility service. The access card disappears when both are granted and returns if either is lost.</string>
     <string name="tutorial_step_2_title">2 · Open the controller</string>
     <string name="tutorial_step_2_body">The main button only opens the floating controller. It does not enter point-picking mode.</string>
-    <string name="tutorial_step_3_title">3 · Add points</string>
-    <string name="tutorial_step_3_body">In the target app, tap plus on the controller, then touch each position AutoTapper should tap. Tap check when point selection is complete.</string>
+    <string name="tutorial_step_3_title">3 · Record taps or swipes</string>
+    <string name="tutorial_step_3_body">After plus, the controller shrinks to the edge. Open its recording controls to switch between tap and swipe; preview a recorded swipe before keeping or retrying it.</string>
     <string name="tutorial_step_4_title">4 · Run and control</string>
-    <string name="tutorial_step_4_body">The controller collapses after starting; tap the edge ball to reopen it. Play pauses or resumes, trash removes the last point, and square stops then clears all on its next tap.</string>
+    <string name="tutorial_step_4_body">The controller collapses after starting; tap the edge ball to reopen it. Play pauses or resumes, trash removes the last action, and square stops then clears all on its next tap.</string>
     <string name="tutorial_step_5_title">5 · Move and collapse</string>
     <string name="tutorial_step_5_body">Drag the controller or ball; it snaps to the nearest edge. Use the chevron icon to collapse and × to close.</string>
     <string name="tutorial_done">Got it</string>
@@ -131,7 +140,7 @@
     <string name="overlay_started_pick">The floating controller is ready. Tap the screen to add points.</string>
     <string name="overlay_closed">The floating controller was closed.</string>
     <string name="accessibility_permission_required">Enable the AutoTapper accessibility service first.</string>
-    <string name="point_required">Add at least one tap point with the + button first.</string>
+    <string name="point_required">Add at least one tap or gesture action with the + button first.</string>
     <string name="invalid_number_input">Enter valid settings. The base interval must be at least 100 ms, and the random delay and rounds cannot be empty.</string>
     <string name="start_command_sent">Start command sent.</string>
     <string name="stop_command_sent">Stop command sent.</string>
@@ -152,13 +161,23 @@
 
     <string name="point_added_toast">Point added: (%1$d, %2$d)</string>
     <string name="point_removed_toast">The last point was removed.</string>
-    <string name="no_point_to_delete_toast">There are no points to remove.</string>
+    <string name="no_point_to_delete_toast">There are no actions to remove.</string>
     <string name="picking_finished_toast">Saved %1$d points.</string>
     <string name="picking_cancelled_toast">Point selection cancelled.</string>
 
     <string name="overlay_title">Tap the screen to add tap points</string>
     <string name="overlay_hint">Each tap records one point. You can add multiple points in sequence.</string>
-    <string name="picker_counter_template">%1$d points added</string>
+    <string name="picker_counter_template">%1$d actions</string>
+    <string name="capture_handle_desc">Open recording controls</string>
+    <string name="capture_mode_tap_desc">Record taps</string>
+    <string name="capture_mode_gesture_desc">Record swipe gestures</string>
+    <string name="capture_undo_desc">Undo the last action recorded in this session</string>
+    <string name="gesture_candidate_summary">Recorded · %1$d px · %2$d ms</string>
+    <string name="gesture_retry_desc">Record the gesture again</string>
+    <string name="gesture_preview_desc">Preview the gesture in the target app</string>
+    <string name="gesture_keep_desc">Keep this gesture</string>
+    <string name="gesture_too_short">The swipe is too short. Record it again.</string>
+    <string name="gesture_preview_failed">Gesture preview failed. Check accessibility access and try again.</string>
     <string name="finish_capture">Done</string>
     <string name="cancel_capture">Cancel</string>
 
@@ -197,9 +216,9 @@
     <string name="overlay_settings_save_desc">Save quick settings</string>
     <string name="overlay_settings_invalid">Check the values: interval ≥ 100, random/rounds ≥ 0, hold 20–10000, taps 1–9999.</string>
     <string name="overlay_settings_saved">Controller settings saved and applied.</string>
-    <string name="overlay_add_button_desc">Add tap point</string>
-    <string name="overlay_clear_button_desc">Delete last tap point</string>
-    <string name="overlay_clear_all_button_desc">Clear all tap points</string>
+    <string name="overlay_add_button_desc">Record taps or gestures</string>
+    <string name="overlay_clear_button_desc">Delete the last action</string>
+    <string name="overlay_clear_all_button_desc">Clear all actions</string>
     <string name="overlay_play_button_desc">Start tapping</string>
     <string name="overlay_pause_button_desc">Pause tapping</string>
     <string name="overlay_resume_button_desc">Resume tapping</string>
@@ -210,8 +229,8 @@
     <string name="overlay_handle_idle">AT</string>
     <string name="overlay_handle_running">RUN</string>
     <string name="overlay_points_template">%1$d points: %2$s</string>
-    <string name="overlay_points_more">and %1$d more</string>
-    <string name="overlay_point_missing">No tap points set</string>
+    <string name="overlay_points_more">and %1$d more actions</string>
+    <string name="overlay_point_missing">No actions set</string>
     <string name="overlay_repeat_infinite">Infinite</string>
     <string name="overlay_repeat_finite">%1$d rounds</string>
     <string name="overlay_state_running">Running</string>
@@ -219,6 +238,6 @@
     <string name="overlay_state_pause_pending">Pausing…</string>
     <string name="overlay_state_stopping">Stopping…</string>
     <string name="overlay_state_idle">Idle</string>
-    <string name="overlay_status_template">Status: %1$s · wait %2$d–%3$d ms · hold %6$d ms\nRounds: %4$s · completed %5$d</string>
-    <string name="overlay_current_point_progress">Point %1$d · tap %2$d/%3$d</string>
+    <string name="overlay_status_template">Status: %1$s · wait %2$d–%3$d ms · action %6$d ms\nRounds: %4$s · completed %5$d</string>
+    <string name="overlay_current_point_progress">Action %1$d · repeat %2$d/%3$d</string>
 </resources>

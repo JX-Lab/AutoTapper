@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Added a versioned action sequence that mixes taps and recorded single-finger gestures while migrating existing points and profiles automatically.
+- Added edge-docked recording controls so the full controller does not block targets during capture.
+- Added gesture path recording, on-screen trajectory feedback, explicit target-app preview, retry, and keep controls.
+- Added gesture editing for per-action delay, repeat count, and duration; the data model already supports multiple strokes for future multi-touch work.
+- Refined contributor attribution to distinguish early foundations from the current redesigned interface.
+
 ## 1.3.0
 
 - Added System, Light, and Night themes with theme-aware app and overlay icons.

@@ -12,10 +12,10 @@ class PointListAdapter(
     private val onDelete: (Int) -> Unit
 ) : RecyclerView.Adapter<PointListAdapter.PointViewHolder>() {
 
-    private var items: List<TapPoint> = emptyList()
+    private var items: List<AutomationAction> = emptyList()
 
-    fun submitPoints(points: List<TapPoint>) {
-        items = points
+    fun submitPoints(actions: List<AutomationAction>) {
+        items = actions
         notifyDataSetChanged()
     }
 
@@ -37,21 +37,52 @@ class PointListAdapter(
     override fun getItemCount(): Int = items.size
 
     override fun onBindViewHolder(holder: PointViewHolder, position: Int) {
-        val point = items[position]
+        val action = items[position]
         val context = holder.itemView.context
         holder.tvIndex.text = context.getString(R.string.point_item_index, position + 1)
-        holder.tvCoords.text = context.getString(R.string.point_item_coords, point.x, point.y)
-        val delayText = if (point.delayMs > 0L) {
-            context.getString(R.string.point_delay_value, point.delayMs)
+        val delayText = if (action.delayMs > 0L) {
+            context.getString(R.string.point_delay_value, action.delayMs)
         } else {
             context.getString(R.string.point_delay_global)
         }
-        holder.tvDetails.text = context.getString(
-            R.string.point_detail_template,
-            delayText,
-            point.repeatCount,
-            point.holdDurationMs
-        )
+        when (action) {
+            is TapPoint -> {
+                holder.tvCoords.text = context.getString(
+                    R.string.point_item_coords,
+                    action.x,
+                    action.y
+                )
+                holder.tvDetails.text = context.getString(
+                    R.string.point_detail_template,
+                    delayText,
+                    action.repeatCount,
+                    action.holdDurationMs
+                )
+            }
+
+            is GestureAction -> {
+                val stroke = action.primaryStroke
+                val start = stroke?.points?.firstOrNull()
+                val end = stroke?.points?.lastOrNull()
+                holder.tvCoords.text = if (start != null && end != null) {
+                    context.getString(
+                        R.string.gesture_item_path,
+                        start.x,
+                        start.y,
+                        end.x,
+                        end.y
+                    )
+                } else {
+                    context.getString(R.string.gesture_item_unknown)
+                }
+                holder.tvDetails.text = context.getString(
+                    R.string.gesture_detail_template,
+                    delayText,
+                    action.repeatCount,
+                    stroke?.durationMs ?: GestureStroke.DEFAULT_DURATION_MS
+                )
+            }
+        }
         holder.btnEdit.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
             if (currentPosition != RecyclerView.NO_POSITION) onEdit(currentPosition)

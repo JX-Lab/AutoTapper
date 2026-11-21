@@ -8,6 +8,7 @@ import java.util.UUID
 object AutoTapperConfig {
     const val PREFS_NAME = "autotapper_prefs"
 
+    const val KEY_ACTIONS = "automation_actions_v2"
     const val KEY_TAP_POINTS = "tap_points"
     const val KEY_INTERVAL_MS = "interval_ms"
     const val KEY_RANDOM_EXTRA_MS = "random_extra_ms"
@@ -44,6 +45,8 @@ object AutoTapperConfig {
     const val ACTION_STOP_CONTROLLER = "com.example.autotapper.action.STOP_CONTROLLER"
     const val ACTION_CLICK_STATE_CHANGED = "com.example.autotapper.action.CLICK_STATE_CHANGED"
     const val ACTION_CONTROLLER_ALPHA_CHANGED = "com.example.autotapper.action.CONTROLLER_ALPHA_CHANGED"
+    const val ACTION_PREVIEW_GESTURE = "com.example.autotapper.action.PREVIEW_GESTURE"
+    const val ACTION_PREVIEW_COMPLETED = "com.example.autotapper.action.PREVIEW_COMPLETED"
 
     const val EXTRA_TAP_X = "extra_tap_x"
     const val EXTRA_TAP_Y = "extra_tap_y"
@@ -54,6 +57,8 @@ object AutoTapperConfig {
     const val EXTRA_ROUNDS_COMPLETED = "extra_rounds_completed"
     const val EXTRA_POINT_REPEAT_PROGRESS = "extra_point_repeat_progress"
     const val EXTRA_PENDING_ACTION = "extra_pending_action"
+    const val EXTRA_GESTURE_JSON = "extra_gesture_json"
+    const val EXTRA_PREVIEW_SUCCESS = "extra_preview_success"
 
     const val PENDING_NONE = 0
     const val PENDING_PAUSE = 1
@@ -62,7 +67,18 @@ object AutoTapperConfig {
     fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun loadPoints(context: Context): List<TapPoint> {
+    fun loadActions(context: Context): List<AutomationAction> {
+        val prefs = prefs(context)
+        prefs.getString(KEY_ACTIONS, null)?.let { raw ->
+            return parseActions(raw)
+        }
+
+        val legacyPoints = loadLegacyPoints(context)
+        if (legacyPoints.isNotEmpty()) saveActions(context, legacyPoints)
+        return legacyPoints
+    }
+
+    private fun loadLegacyPoints(context: Context): List<TapPoint> {
         val prefs = prefs(context)
         val raw = prefs.getString(KEY_TAP_POINTS, null)
         if (raw != null) {
@@ -73,58 +89,76 @@ object AutoTapperConfig {
         val legacyY = prefs.getInt(KEY_TAP_Y, -1)
         if (legacyX >= 0 && legacyY >= 0) {
             val points = listOf(TapPoint(legacyX, legacyY))
-            savePoints(context, points)
             return points
         }
         return emptyList()
     }
 
-    fun savePoints(context: Context, points: List<TapPoint>) {
-        prefs(context).edit().putString(KEY_TAP_POINTS, pointsToJson(points).toString()).apply()
+    fun loadPoints(context: Context): List<TapPoint> = loadActions(context).filterIsInstance<TapPoint>()
+
+    fun saveActions(context: Context, actions: List<AutomationAction>) {
+        prefs(context).edit().putString(KEY_ACTIONS, actionsToJson(actions).toString()).apply()
     }
 
-    fun addPoint(context: Context, x: Int, y: Int): List<TapPoint> {
-        val points = loadPoints(context) + TapPoint(
+    fun savePoints(context: Context, points: List<TapPoint>) {
+        saveActions(context, points)
+    }
+
+    fun addPoint(context: Context, x: Int, y: Int): List<AutomationAction> {
+        val actions = loadActions(context) + TapPoint(
             x = x,
             y = y,
             repeatCount = getDefaultPointRepeat(context),
             holdDurationMs = getDefaultHoldDuration(context)
         )
-        savePoints(context, points)
-        return points
+        saveActions(context, actions)
+        return actions
     }
 
-    fun updatePointAt(context: Context, index: Int, point: TapPoint): List<TapPoint> {
-        val points = loadPoints(context)
-        if (index !in points.indices) return points
-        val updated = points.toMutableList().apply { this[index] = point }
-        savePoints(context, updated)
+    fun addGesture(context: Context, gesture: GestureAction): List<AutomationAction> {
+        val actions = loadActions(context) + gesture
+        saveActions(context, actions)
+        return actions
+    }
+
+    fun updateActionAt(
+        context: Context,
+        index: Int,
+        action: AutomationAction
+    ): List<AutomationAction> {
+        val actions = loadActions(context)
+        if (index !in actions.indices) return actions
+        val updated = actions.toMutableList().apply { this[index] = action }
+        saveActions(context, updated)
         return updated
     }
 
-    fun removeLastPoint(context: Context): List<TapPoint> {
-        val points = loadPoints(context)
-        val updated = if (points.isEmpty()) points else points.dropLast(1)
-        savePoints(context, updated)
+    fun updatePointAt(context: Context, index: Int, point: TapPoint): List<AutomationAction> =
+        updateActionAt(context, index, point)
+
+    fun removeLastPoint(context: Context): List<AutomationAction> {
+        val actions = loadActions(context)
+        val updated = if (actions.isEmpty()) actions else actions.dropLast(1)
+        saveActions(context, updated)
         return updated
     }
 
     fun clearPoints(context: Context) {
-        savePoints(context, emptyList())
+        saveActions(context, emptyList())
     }
 
-    fun removePointAt(context: Context, index: Int): List<TapPoint> {
-        val points = loadPoints(context)
-        val updated = if (index in points.indices) {
-            points.toMutableList().apply { removeAt(index) }
+    fun removePointAt(context: Context, index: Int): List<AutomationAction> {
+        val actions = loadActions(context)
+        val updated = if (index in actions.indices) {
+            actions.toMutableList().apply { removeAt(index) }
         } else {
-            points
+            actions
         }
-        savePoints(context, updated)
+        saveActions(context, updated)
         return updated
     }
 
-    fun hasPoints(context: Context): Boolean = loadPoints(context).isNotEmpty()
+    fun hasPoints(context: Context): Boolean = loadActions(context).isNotEmpty()
 
     fun saveBaseConfig(
         context: Context,
@@ -188,10 +222,14 @@ object AutoTapperConfig {
     fun applyDefaultPointSettingsToAll(context: Context) {
         val hold = getDefaultHoldDuration(context)
         val repeats = getDefaultPointRepeat(context)
-        savePoints(
+        saveActions(
             context,
-            loadPoints(context).map { point ->
-                point.copy(holdDurationMs = hold, repeatCount = repeats)
+            loadActions(context).map { action ->
+                if (action is TapPoint) {
+                    action.copy(holdDurationMs = hold, repeatCount = repeats)
+                } else {
+                    action
+                }
             }
         )
     }
@@ -217,7 +255,7 @@ object AutoTapperConfig {
     fun isActiveProfileModified(context: Context): Boolean {
         val active = getActiveProfile(context) ?: return false
         val currentPrefs = prefs(context)
-        return active.points != loadPoints(context) ||
+        return active.actions != loadActions(context) ||
             active.intervalMs != currentPrefs.getLong(KEY_INTERVAL_MS, 400L).coerceAtLeast(100L) ||
             active.randomExtraMs != currentPrefs.getLong(
                 KEY_RANDOM_EXTRA_MS,
@@ -235,7 +273,7 @@ object AutoTapperConfig {
         val profile = AutomationProfile(
             id = existingId ?: UUID.randomUUID().toString(),
             name = name,
-            points = loadPoints(context),
+            actions = loadActions(context),
             intervalMs = currentPrefs.getLong(KEY_INTERVAL_MS, 400L).coerceAtLeast(100L),
             randomExtraMs = currentPrefs.getLong(KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L),
             repeatCount = currentPrefs.getInt(KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
@@ -248,7 +286,7 @@ object AutoTapperConfig {
 
     fun activateProfile(context: Context, profileId: String): AutomationProfile? {
         val profile = loadProfiles(context).firstOrNull { it.id == profileId } ?: return null
-        savePoints(context, profile.points)
+        saveActions(context, profile.actions)
         prefs(context).edit()
             .putLong(KEY_INTERVAL_MS, profile.intervalMs)
             .putLong(KEY_RANDOM_EXTRA_MS, profile.randomExtraMs)
@@ -278,7 +316,7 @@ object AutoTapperConfig {
     private fun profileToJson(profile: AutomationProfile) = JSONObject()
         .put("id", profile.id)
         .put("name", profile.name)
-        .put("points", pointsToJson(profile.points))
+        .put("actions", actionsToJson(profile.actions))
         .put("intervalMs", profile.intervalMs)
         .put("randomExtraMs", profile.randomExtraMs)
         .put("repeatCount", profile.repeatCount)
@@ -289,24 +327,149 @@ object AutoTapperConfig {
         return AutomationProfile(
             id = id,
             name = name,
-            points = parsePoints(obj.optJSONArray("points") ?: JSONArray()),
+            actions = if (obj.has("actions")) {
+                parseActions(obj.optJSONArray("actions") ?: JSONArray())
+            } else {
+                parsePoints(obj.optJSONArray("points") ?: JSONArray())
+            },
             intervalMs = obj.optLong("intervalMs", 400L).coerceAtLeast(100L),
             randomExtraMs = obj.optLong("randomExtraMs", 80L).coerceAtLeast(0L),
             repeatCount = obj.optInt("repeatCount", 0).coerceAtLeast(0)
         )
     }
 
-    private fun pointsToJson(points: List<TapPoint>) = JSONArray().apply {
-        points.forEach { point ->
-            put(
-                JSONObject()
-                    .put("x", point.x)
-                    .put("y", point.y)
-                    .put("delayMs", point.delayMs)
-                    .put("repeatCount", point.repeatCount)
-                    .put("holdDurationMs", point.holdDurationMs)
+    fun gestureToJson(gesture: GestureAction): String = actionToJson(gesture).toString()
+
+    fun gestureFromJson(raw: String): GestureAction? = runCatching {
+        parseAction(JSONObject(raw)) as? GestureAction
+    }.getOrNull()
+
+    private fun actionsToJson(actions: List<AutomationAction>) = JSONArray().apply {
+        actions.forEach { put(actionToJson(it)) }
+    }
+
+    private fun actionToJson(action: AutomationAction): JSONObject = when (action) {
+        is TapPoint -> JSONObject()
+            .put("type", "tap")
+            .put("x", action.x)
+            .put("y", action.y)
+            .put("delayMs", action.delayMs)
+            .put("repeatCount", action.repeatCount)
+            .put("holdDurationMs", action.holdDurationMs)
+
+        is GestureAction -> JSONObject()
+            .put("type", "gesture")
+            .put("delayMs", action.delayMs)
+            .put("repeatCount", action.repeatCount)
+            .put(
+                "strokes",
+                JSONArray().apply {
+                    action.strokes.forEach { stroke ->
+                        put(
+                            JSONObject()
+                                .put("startOffsetMs", stroke.startOffsetMs)
+                                .put("durationMs", stroke.durationMs)
+                                .put(
+                                    "points",
+                                    JSONArray().apply {
+                                        stroke.points.forEach { point ->
+                                            put(
+                                                JSONObject()
+                                                    .put("x", point.x)
+                                                    .put("y", point.y)
+                                                    .put("timeOffsetMs", point.timeOffsetMs)
+                                            )
+                                        }
+                                    }
+                                )
+                        )
+                    }
+                }
             )
+    }
+
+    private fun parseActions(raw: String): List<AutomationAction> =
+        runCatching { parseActions(JSONArray(raw)) }.getOrDefault(emptyList())
+
+    private fun parseActions(array: JSONArray): List<AutomationAction> = buildList {
+        for (i in 0 until array.length()) {
+            val obj = array.optJSONObject(i) ?: continue
+            parseAction(obj)?.let(::add)
         }
+    }
+
+    private fun parseAction(obj: JSONObject): AutomationAction? {
+        return when (obj.optString("type", "tap")) {
+            "gesture" -> {
+                val strokesJson = obj.optJSONArray("strokes") ?: return null
+                val strokes = buildList {
+                    for (index in 0 until strokesJson.length()) {
+                        val strokeJson = strokesJson.optJSONObject(index) ?: continue
+                        val pointsJson = strokeJson.optJSONArray("points") ?: continue
+                        val points = buildList {
+                            for (pointIndex in 0 until pointsJson.length()) {
+                                val pointJson = pointsJson.optJSONObject(pointIndex) ?: continue
+                                val x = pointJson.optInt("x", -1)
+                                val y = pointJson.optInt("y", -1)
+                                if (x >= 0 && y >= 0) {
+                                    add(
+                                        GesturePoint(
+                                            x = x,
+                                            y = y,
+                                            timeOffsetMs = pointJson.optLong(
+                                                "timeOffsetMs",
+                                                0L
+                                            ).coerceAtLeast(0L)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        if (points.size >= 2) {
+                            add(
+                                GestureStroke(
+                                    points = points,
+                                    startOffsetMs = strokeJson.optLong(
+                                        "startOffsetMs",
+                                        0L
+                                    ).coerceAtLeast(0L),
+                                    durationMs = strokeJson.optLong(
+                                        "durationMs",
+                                        GestureStroke.DEFAULT_DURATION_MS
+                                    ).coerceIn(MIN_GESTURE_DURATION_MS, MAX_GESTURE_DURATION_MS)
+                                )
+                            )
+                        }
+                    }
+                }
+                strokes.takeIf { it.isNotEmpty() }?.let {
+                    GestureAction(
+                        strokes = it,
+                        delayMs = obj.optLong("delayMs", 0L).coerceAtLeast(0L),
+                        repeatCount = obj.optInt("repeatCount", 1)
+                            .coerceIn(1, MAX_POINT_REPEAT)
+                    )
+                }
+            }
+
+            else -> parseTapPoint(obj)
+        }
+    }
+
+    private fun parseTapPoint(obj: JSONObject): TapPoint? {
+        val x = obj.optInt("x", -1)
+        val y = obj.optInt("y", -1)
+        if (x < 0 || y < 0) return null
+        return TapPoint(
+            x = x,
+            y = y,
+            delayMs = obj.optLong("delayMs", 0L).coerceAtLeast(0L),
+            repeatCount = obj.optInt("repeatCount", 1).coerceIn(1, MAX_POINT_REPEAT),
+            holdDurationMs = obj.optLong(
+                "holdDurationMs",
+                TapPoint.DEFAULT_HOLD_DURATION_MS
+            ).coerceIn(MIN_HOLD_DURATION_MS, MAX_HOLD_DURATION_MS)
+        )
     }
 
     private fun parsePoints(raw: String): List<TapPoint> =
@@ -315,27 +478,14 @@ object AutoTapperConfig {
     private fun parsePoints(array: JSONArray): List<TapPoint> = buildList {
         for (i in 0 until array.length()) {
             val obj = array.optJSONObject(i) ?: continue
-            val x = obj.optInt("x", -1)
-            val y = obj.optInt("y", -1)
-            if (x >= 0 && y >= 0) {
-                add(
-                    TapPoint(
-                        x = x,
-                        y = y,
-                        delayMs = obj.optLong("delayMs", 0L).coerceAtLeast(0L),
-                        repeatCount = obj.optInt("repeatCount", 1).coerceIn(1, MAX_POINT_REPEAT),
-                        holdDurationMs = obj.optLong(
-                            "holdDurationMs",
-                            TapPoint.DEFAULT_HOLD_DURATION_MS
-                        ).coerceIn(MIN_HOLD_DURATION_MS, MAX_HOLD_DURATION_MS)
-                    )
-                )
-            }
+            parseTapPoint(obj)?.let(::add)
         }
     }
 
     const val MIN_HOLD_DURATION_MS = 20L
     const val MAX_HOLD_DURATION_MS = 10_000L
+    const val MIN_GESTURE_DURATION_MS = 100L
+    const val MAX_GESTURE_DURATION_MS = 5_000L
     const val MAX_POINT_REPEAT = 9_999
     const val MAX_PROFILE_NAME_LENGTH = 32
 }

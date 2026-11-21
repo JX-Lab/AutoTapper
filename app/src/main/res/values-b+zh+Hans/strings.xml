@@ -2,7 +2,7 @@
     <string name="app_name">AutoTapper</string>
     <string name="screen_eyebrow">自动点击控制台</string>
     <string name="screen_title">AutoTapper</string>
-    <string name="screen_subtitle">支持多点击顺序轮流点击：在任意应用中通过可拖动的悬浮控制器连续取点、开始点击和停止点击。</string>
+    <string name="screen_subtitle">在任意应用中通过悬浮控制器录制点击与滑动，并按动作序列自动执行。</string>
     <string name="version_label">版本 v%1$s</string>
     <string name="check_update">检查更新</string>
     <string name="status_title">权限状态</string>
@@ -13,22 +13,31 @@
     <string name="permission_missing">未开启</string>
     <string name="grant_permission_button">去授权</string>
 
-    <string name="points_title">点击点位</string>
-    <string name="points_subtitle">控制器会从上到下依次点击这些位置。</string>
-    <string name="points_count_badge">%1$d 个点</string>
-    <string name="points_empty">还没有点位。打开悬浮控制器，点击 + 连续添加点击位置。</string>
+    <string name="points_title">动作序列</string>
+    <string name="points_subtitle">控制器会从上到下依次执行点击与手势。</string>
+    <string name="points_count_badge">%1$d 个动作</string>
+    <string name="points_empty">还没有动作。打开悬浮控制器，点击 + 添加点击或滑动。</string>
     <string name="open_controller">打开悬浮控制器</string>
-    <string name="point_item_index">点 %1$d</string>
+    <string name="point_item_index">动作 %1$d</string>
     <string name="point_item_coords">(%1$d, %2$d)</string>
-    <string name="delete_point_desc">删除该点位</string>
-    <string name="edit_point_desc">编辑该点位</string>
+    <string name="delete_point_desc">删除该动作</string>
+    <string name="edit_point_desc">编辑该动作</string>
     <string name="point_deleted_toast">已删除点位 %1$d。</string>
     <string name="point_updated_toast">已更新点位 %1$d。</string>
     <string name="point_detail_template">间隔 %1$s · 连点 %2$d · 按压 %3$d ms</string>
+    <string name="gesture_item_path">滑动 (%1$d,%2$d) → (%3$d,%4$d)</string>
+    <string name="gesture_item_unknown">滑动手势</string>
+    <string name="gesture_detail_template">间隔 %1$s · 重复 %2$d · 时长 %3$d ms</string>
+    <string name="edit_gesture_title">编辑手势动作 %1$d</string>
+    <string name="gesture_repeat_label">手势重复次数</string>
+    <string name="gesture_repeat_help">范围：1–9999。完成这些重复后才进入下一动作。</string>
+    <string name="gesture_duration_label">手势持续时间（毫秒）</string>
+    <string name="gesture_duration_help">范围：100–5000 ms。数值越大，手势执行越慢。</string>
+    <string name="gesture_settings_invalid">请输入不小于 0 的间隔、1–9999 次重复，以及 100–5000 毫秒的手势时长。</string>
     <string name="point_delay_global">全局</string>
     <string name="point_delay_value">%1$d ms</string>
     <string name="edit_point_title">编辑点位 %1$d · (%2$d, %3$d)</string>
-    <string name="point_delay_label">每次点击后等待（毫秒）</string>
+    <string name="point_delay_label">动作完成后等待（毫秒）</string>
     <string name="point_delay_help">填 0 表示沿用全局基础间隔。</string>
     <string name="point_repeat_label">该点连续点击次数</string>
     <string name="point_repeat_help">在进入下一点前，连续点击该点 1–9999 次。</string>
@@ -38,7 +47,7 @@
     <string name="save_changes">保存修改</string>
 
     <string name="profiles_title">已保存方案</string>
-    <string name="profiles_subtitle">保存当前点位与节奏，之后可以快速切换整套配置。</string>
+    <string name="profiles_subtitle">保存当前动作序列与节奏，之后可以快速切换整套配置。</string>
     <string name="profile_active_label">当前方案</string>
     <string name="profile_none">尚未保存的当前配置</string>
     <string name="profile_modified">%1$s · 已修改</string>
@@ -58,19 +67,19 @@
     <string name="profile_save_title">保存当前配置</string>
     <string name="profile_select_title">选择方案</string>
     <string name="profile_delete_title">删除方案？</string>
-    <string name="profile_delete_message">确定删除“%1$s”吗？当前屏幕上的点位不会被清空。</string>
+    <string name="profile_delete_message">确定删除“%1$s”吗？当前屏幕上的动作不会被清空。</string>
     <string name="profile_saved">已保存方案“%1$s”。</string>
     <string name="profile_loaded">已载入方案“%1$s”。</string>
     <string name="profile_deleted">方案已删除。</string>
     <string name="profile_list_empty">还没有保存方案。</string>
     <string name="profile_active_short">当前</string>
     <string name="profile_edit_desc">载入该方案进行编辑</string>
-    <string name="profile_edit_loaded">已载入“%1$s”，请在上方修改点位或配置后保存。</string>
-    <string name="profile_summary_template">%1$d 个点 · %2$d ms · %3$s</string>
+    <string name="profile_edit_loaded">已载入“%1$s”，请在上方修改动作或配置后保存。</string>
+    <string name="profile_summary_template">%1$d 个动作 · %2$d ms · %3$s</string>
 
     <string name="config_title">点击配置</string>
     <string name="config_subtitle">一次设定点击节奏，悬浮控制器会立即使用。</string>
-    <string name="config_intro">多点模式会依次执行每个点位，并包含点位自己的连点次数和按压时长。实际等待 = 点位或全局间隔 + 随机延迟。</string>
+    <string name="config_intro">动作序列会依次执行点击和手势。点击保留连点与按压参数，手势保留重复与持续时间；实际等待 = 动作或全局间隔 + 随机延迟。</string>
     <string name="interval_label">基础间隔</string>
     <string name="interval_help">范围：至少 100 ms。数值越小点击越快；300–800 ms 适合多数界面，超过 1000 ms 更稳但更慢。</string>
     <string name="random_extra_label">随机附加延迟</string>
@@ -87,7 +96,7 @@
     <string name="point_defaults_applied">已应用点位按压时长和连点次数。</string>
     <string name="point_defaults_invalid">按压时长应为 20–10000 ms，连点次数应为 1–9999。</string>
     <string name="config_summary_title">当前配置摘要</string>
-    <string name="config_summary_template">多点轮询 · %1$d 个点位\n每次点击后等待：%2$d-%3$d 毫秒\n点击轮数：%4$s</string>
+    <string name="config_summary_template">动作序列 · %1$d 个动作\n每个动作后等待：%2$d-%3$d 毫秒\n执行轮数：%4$s</string>
     <string name="config_summary_repeat_infinite">无限（直到手动停止）</string>
     <string name="config_summary_repeat_finite">%1$d 轮</string>
     <string name="config_summary_invalid">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和轮数不能留空。</string>
@@ -96,7 +105,7 @@
 
     <string name="start_clicking">开始点击</string>
     <string name="stop_clicking">停止点击</string>
-    <string name="usage_note">使用说明：打开悬浮控制器后，侧边会出现可拖动的悬浮球，拖动它可调整位置。展开控制器：+ 连续添加点位、DEL 删除最后一个点位、GO 开始点击、STOP 停止。点击进行时，正在点击的点位会闪烁高亮。</string>
+    <string name="usage_note">使用说明：打开悬浮控制器后，点击加号录制点击或滑动；录制时控制器会缩到边缘。播放用于开始或暂停，垃圾桶删除上一动作，方块用于停止或清空。</string>
     <string name="usage_title">快速提示</string>
     <string name="theme_button_desc">选择应用主题</string>
     <string name="tutorial_button_desc">打开使用教程</string>
@@ -113,13 +122,13 @@
 
     <string name="tutorial_eyebrow">快速上手</string>
     <string name="tutorial_title">如何使用 AutoTapper</string>
-    <string name="tutorial_intro">悬浮控制器不会自行点击；先由你选择点位，再明确开始运行。</string>
+    <string name="tutorial_intro">悬浮控制器不会自行操作；先由你录制点击或滑动，再明确开始运行。</string>
     <string name="tutorial_step_1_title">1 · 授予必要权限</string>
     <string name="tutorial_step_1_body">开启悬浮窗和 AutoTapper 无障碍服务。授权完成后权限卡会从主界面消失；如果以后失效，它会自动重新出现。</string>
     <string name="tutorial_step_2_title">2 · 打开悬浮控制器</string>
     <string name="tutorial_step_2_body">主界面按钮只负责打开控制器，不会自动进入取点模式。</string>
-    <string name="tutorial_step_3_title">3 · 添加点位</string>
-    <string name="tutorial_step_3_body">进入目标应用后点击控制器上的加号，再依次触摸需要自动点击的位置；选完后点击对勾结束取点。</string>
+    <string name="tutorial_step_3_title">3 · 录制点击或滑动</string>
+    <string name="tutorial_step_3_body">点击加号后控制器会缩到边缘。点小球展开录制栏，可切换点击或滑动；滑动录完后先预览实际效果，再保留或重录。</string>
     <string name="tutorial_step_4_title">4 · 运行与控制</string>
     <string name="tutorial_step_4_body">开始后控制器会自动收起；点击边缘悬浮球可重新展开。播放用于暂停和继续，垃圾桶删除最后一点；方块先停止，再点一次会清空全部。</string>
     <string name="tutorial_step_5_title">5 · 移动与收起</string>
@@ -131,7 +140,7 @@
     <string name="overlay_started_pick">悬浮控制器已显示，请点击屏幕添加点位。</string>
     <string name="overlay_closed">悬浮控制器已关闭。</string>
     <string name="accessibility_permission_required">需要先开启 AutoTapper 无障碍服务。</string>
-    <string name="point_required">请先通过悬浮控制器上的 + 添加点击位置。</string>
+    <string name="point_required">请先通过悬浮控制器上的 + 添加至少一个点击或手势动作。</string>
     <string name="invalid_number_input">请输入有效配置：基础间隔至少为 100 毫秒，随机附加延迟和轮数不能留空。</string>
     <string name="start_command_sent">开始指令已发送。</string>
     <string name="stop_command_sent">停止指令已发送。</string>
@@ -152,13 +161,23 @@
 
     <string name="point_added_toast">已添加点位：(%1$d, %2$d)</string>
     <string name="point_removed_toast">已删除最后一个点位。</string>
-    <string name="no_point_to_delete_toast">当前没有可删除的点位。</string>
+    <string name="no_point_to_delete_toast">当前没有可删除的动作。</string>
     <string name="picking_finished_toast">已保存，当前共 %1$d 个点位。</string>
     <string name="picking_cancelled_toast">已取消本次取点。</string>
 
     <string name="overlay_title">点击屏幕添加点击点</string>
     <string name="overlay_hint">每轻触一次屏幕就记录一个点位，可连续添加多个。</string>
-    <string name="picker_counter_template">已添加 %1$d 个点位</string>
+    <string name="picker_counter_template">当前 %1$d 个动作</string>
+    <string name="capture_handle_desc">展开录制控制栏</string>
+    <string name="capture_mode_tap_desc">录制点击</string>
+    <string name="capture_mode_gesture_desc">录制滑动手势</string>
+    <string name="capture_undo_desc">撤销本次录制的上一个动作</string>
+    <string name="gesture_candidate_summary">已录制 · 距离 %1$d px · %2$d ms</string>
+    <string name="gesture_retry_desc">重新录制手势</string>
+    <string name="gesture_preview_desc">在目标应用预览手势</string>
+    <string name="gesture_keep_desc">保留这个手势</string>
+    <string name="gesture_too_short">滑动距离太短，请重新录制。</string>
+    <string name="gesture_preview_failed">手势预览失败，请确认无障碍权限后重试。</string>
     <string name="finish_capture">完成</string>
     <string name="cancel_capture">取消</string>
 
@@ -197,9 +216,9 @@
     <string name="overlay_settings_save_desc">保存快捷参数</string>
     <string name="overlay_settings_invalid">请检查数值：间隔 ≥ 100，随机/轮数 ≥ 0，按压 20–10000，连点 1–9999。</string>
     <string name="overlay_settings_saved">控制器参数已保存并应用。</string>
-    <string name="overlay_add_button_desc">添加点位</string>
-    <string name="overlay_clear_button_desc">删除最后一个点位</string>
-    <string name="overlay_clear_all_button_desc">清空所有点位</string>
+    <string name="overlay_add_button_desc">录制点击或手势</string>
+    <string name="overlay_clear_button_desc">删除最后一个动作</string>
+    <string name="overlay_clear_all_button_desc">清空所有动作</string>
     <string name="overlay_play_button_desc">开始点击</string>
     <string name="overlay_pause_button_desc">暂停点击</string>
     <string name="overlay_resume_button_desc">继续点击</string>
@@ -210,8 +229,8 @@
     <string name="overlay_handle_idle">AT</string>
     <string name="overlay_handle_running">RUN</string>
     <string name="overlay_points_template">%1$d 个：%2$s</string>
-    <string name="overlay_points_more">等 %1$d 个</string>
-    <string name="overlay_point_missing">未设置点位</string>
+    <string name="overlay_points_more">等 %1$d 个动作</string>
+    <string name="overlay_point_missing">未设置动作</string>
     <string name="overlay_repeat_infinite">无限</string>
     <string name="overlay_repeat_finite">%1$d 轮</string>
     <string name="overlay_state_running">运行中</string>
@@ -219,6 +238,6 @@
     <string name="overlay_state_pause_pending">暂停中…</string>
     <string name="overlay_state_stopping">停止中…</string>
     <string name="overlay_state_idle">待命</string>
-    <string name="overlay_status_template">状态：%1$s · 等待 %2$d-%3$d ms · 按压 %6$d ms\n轮数：%4$s · 已完成 %5$d</string>
-    <string name="overlay_current_point_progress">点位 %1$d · 第 %2$d/%3$d 次</string>
+    <string name="overlay_status_template">状态：%1$s · 等待 %2$d-%3$d ms · 动作 %6$d ms\n轮数：%4$s · 已完成 %5$d</string>
+    <string name="overlay_current_point_progress">动作 %1$d · 第 %2$d/%3$d 次</string>
 </resources>

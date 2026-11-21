@@ -24,10 +24,10 @@ class AutoClickService : AccessibilityService() {
     private var pendingAction = AutoTapperConfig.PENDING_NONE
     private var sessionGeneration = 0
     private var roundsCompleted = 0
-    private var pointIndex = 0
-    private var pointRepeatProgress = 0
+    private var actionIndex = 0
+    private var actionRepeatProgress = 0
 
-    private var points: List<TapPoint> = emptyList()
+    private var actions: List<AutomationAction> = emptyList()
     private var intervalMs = 400L
     private var randomExtraMs = 80L
     private var repeatCount = 0
@@ -41,6 +41,15 @@ class AutoClickService : AccessibilityService() {
                 AutoTapperConfig.ACTION_STOP_CLICKING -> {
                     if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) {
                         requestStop()
+                    }
+                }
+                AutoTapperConfig.ACTION_PREVIEW_GESTURE -> {
+                    val raw = intent.getStringExtra(AutoTapperConfig.EXTRA_GESTURE_JSON)
+                    val gesture = raw?.let(AutoTapperConfig::gestureFromJson)
+                    if (gesture == null || isClicking || isPaused || gestureInFlight) {
+                        broadcastPreviewCompleted(success = false)
+                    } else {
+                        previewGesture(gesture)
                     }
                 }
             }
@@ -65,12 +74,12 @@ class AutoClickService : AccessibilityService() {
         super.onDestroy()
     }
 
-    private fun performClick() {
+    private fun performNextAction() {
         if (!isClicking) {
             return
         }
 
-        if (points.isEmpty()) {
+        if (actions.isEmpty()) {
             finishStop(showToast = true, message = getString(R.string.point_required))
             return
         }
@@ -80,19 +89,13 @@ class AutoClickService : AccessibilityService() {
             return
         }
 
-        val point = points[pointIndex]
+        val action = actions[actionIndex]
         broadcastClickState()
         val generation = sessionGeneration
-
-        val gesture: GestureDescription = GestureDescription.Builder()
-            .addStroke(
-                GestureDescription.StrokeDescription(
-                    Path().apply { moveTo(point.x.toFloat(), point.y.toFloat()) },
-                    0,
-                    point.holdDurationMs
-                )
-            )
-            .build()
+        val gesture = buildGesture(action) ?: run {
+            finishStop(showToast = true, message = getString(R.string.click_dispatch_failed))
+            return
+        }
 
         gestureInFlight = true
         val dispatched: Boolean = dispatchGesture(
@@ -102,7 +105,7 @@ class AutoClickService : AccessibilityService() {
                     super.onCompleted(gestureDescription)
                     gestureInFlight = false
                     if (generation != sessionGeneration) {
-                        if (isClicking) performClick()
+                        if (isClicking) performNextAction()
                         return
                     }
                     if (!isClicking && !isPaused &&
@@ -116,12 +119,12 @@ class AutoClickService : AccessibilityService() {
                         return
                     }
 
-                    pointRepeatProgress++
-                    if (pointRepeatProgress >= point.repeatCount) {
-                        pointRepeatProgress = 0
-                        pointIndex++
-                        if (pointIndex >= points.size) {
-                            pointIndex = 0
+                    actionRepeatProgress++
+                    if (actionRepeatProgress >= action.repeatCount) {
+                        actionRepeatProgress = 0
+                        actionIndex++
+                        if (actionIndex >= actions.size) {
+                            actionIndex = 0
                             roundsCompleted++
                         }
                     }
@@ -146,8 +149,8 @@ class AutoClickService : AccessibilityService() {
                     } else {
                         0L
                     }
-                    val pointDelay = point.delayMs.takeIf { it > 0L } ?: intervalMs
-                    scheduleNextClick(pointDelay + randomDelay)
+                    val actionDelay = action.delayMs.takeIf { it > 0L } ?: intervalMs
+                    scheduleNextAction(actionDelay + randomDelay)
                 }
 
                 override fun onCancelled(gestureDescription: GestureDescription?) {
@@ -177,6 +180,82 @@ class AutoClickService : AccessibilityService() {
         }
     }
 
+    private fun buildGesture(action: AutomationAction): GestureDescription? {
+        val builder = GestureDescription.Builder()
+        when (action) {
+            is TapPoint -> {
+                builder.addStroke(
+                    GestureDescription.StrokeDescription(
+                        Path().apply { moveTo(action.x.toFloat(), action.y.toFloat()) },
+                        0L,
+                        action.holdDurationMs
+                    )
+                )
+            }
+
+            is GestureAction -> {
+                if (action.strokes.isEmpty()) return null
+                action.strokes.take(MAX_GESTURE_STROKES).forEach { stroke ->
+                    if (stroke.points.size < 2) return@forEach
+                    val path = Path().apply {
+                        val first = stroke.points.first()
+                        moveTo(first.x.toFloat(), first.y.toFloat())
+                        stroke.points.drop(1).forEach { point ->
+                            lineTo(point.x.toFloat(), point.y.toFloat())
+                        }
+                    }
+                    builder.addStroke(
+                        GestureDescription.StrokeDescription(
+                            path,
+                            stroke.startOffsetMs,
+                            stroke.durationMs.coerceIn(
+                                AutoTapperConfig.MIN_GESTURE_DURATION_MS,
+                                AutoTapperConfig.MAX_GESTURE_DURATION_MS
+                            )
+                        )
+                    )
+                }
+            }
+        }
+        return runCatching { builder.build() }.getOrNull()
+    }
+
+    private fun previewGesture(action: GestureAction) {
+        val gesture = buildGesture(action)
+        if (gesture == null) {
+            broadcastPreviewCompleted(success = false)
+            return
+        }
+        gestureInFlight = true
+        val dispatched = dispatchGesture(
+            gesture,
+            object : GestureResultCallback() {
+                override fun onCompleted(gestureDescription: GestureDescription?) {
+                    gestureInFlight = false
+                    broadcastPreviewCompleted(success = true)
+                }
+
+                override fun onCancelled(gestureDescription: GestureDescription?) {
+                    gestureInFlight = false
+                    broadcastPreviewCompleted(success = false)
+                }
+            },
+            null
+        )
+        if (!dispatched) {
+            gestureInFlight = false
+            broadcastPreviewCompleted(success = false)
+        }
+    }
+
+    private fun broadcastPreviewCompleted(success: Boolean) {
+        sendBroadcast(
+            Intent(AutoTapperConfig.ACTION_PREVIEW_COMPLETED)
+                .setPackage(packageName)
+                .putExtra(AutoTapperConfig.EXTRA_PREVIEW_SUCCESS, success)
+        )
+    }
+
     private fun startClicking() {
         if (pendingAction == AutoTapperConfig.PENDING_STOP) return
         if (pendingAction == AutoTapperConfig.PENDING_PAUSE) {
@@ -187,7 +266,7 @@ class AutoClickService : AccessibilityService() {
             resumeClicking()
             return
         }
-        points = AutoTapperConfig.loadPoints(this)
+        actions = AutoTapperConfig.loadActions(this)
         intervalMs = AutoTapperConfig.prefs(this)
             .getLong(AutoTapperConfig.KEY_INTERVAL_MS, 400L).coerceAtLeast(100L)
         randomExtraMs = AutoTapperConfig.prefs(this)
@@ -195,21 +274,21 @@ class AutoClickService : AccessibilityService() {
         repeatCount = AutoTapperConfig.prefs(this)
             .getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
 
-        if (points.isEmpty()) {
+        if (actions.isEmpty()) {
             Toast.makeText(this, R.string.point_required, Toast.LENGTH_SHORT).show()
             return
         }
 
         roundsCompleted = 0
-        pointIndex = 0
-        pointRepeatProgress = 0
+        actionIndex = 0
+        actionRepeatProgress = 0
         sessionGeneration++
         pendingAction = AutoTapperConfig.PENDING_NONE
         isClicking = true
         isPaused = false
         broadcastClickState()
         clearPendingClicks()
-        if (!gestureInFlight) performClick()
+        if (!gestureInFlight) performNextAction()
     }
 
     private fun pauseClicking() {
@@ -240,7 +319,7 @@ class AutoClickService : AccessibilityService() {
         isPaused = false
         isClicking = true
         broadcastClickState()
-        if (!gestureInFlight) performClick()
+        if (!gestureInFlight) performNextAction()
     }
 
     private fun requestStop() {
@@ -264,7 +343,7 @@ class AutoClickService : AccessibilityService() {
         gestureInFlight = false
         sessionGeneration++
         clearPendingClicks()
-        pointRepeatProgress = 0
+        actionRepeatProgress = 0
         broadcastClickState()
 
         if (showToast && (wasActive || !message.isNullOrBlank())) {
@@ -273,8 +352,8 @@ class AutoClickService : AccessibilityService() {
         }
     }
 
-    private fun scheduleNextClick(delayMs: Long) {
-        handler.postDelayed({ performClick() }, delayMs)
+    private fun scheduleNextAction(delayMs: Long) {
+        handler.postDelayed({ performNextAction() }, delayMs)
     }
 
     private fun clearPendingClicks() {
@@ -291,10 +370,10 @@ class AutoClickService : AccessibilityService() {
                 .putExtra(AutoTapperConfig.EXTRA_IS_PAUSED, isPaused)
                 .putExtra(
                     AutoTapperConfig.EXTRA_CURRENT_POINT_INDEX,
-                    if (isActive) pointIndex else -1
+                    if (isActive) actionIndex else -1
                 )
                 .putExtra(AutoTapperConfig.EXTRA_ROUNDS_COMPLETED, roundsCompleted)
-                .putExtra(AutoTapperConfig.EXTRA_POINT_REPEAT_PROGRESS, pointRepeatProgress)
+                .putExtra(AutoTapperConfig.EXTRA_POINT_REPEAT_PROGRESS, actionRepeatProgress)
                 .putExtra(AutoTapperConfig.EXTRA_PENDING_ACTION, pendingAction)
         )
     }
@@ -309,6 +388,7 @@ class AutoClickService : AccessibilityService() {
             addAction(AutoTapperConfig.ACTION_PAUSE_CLICKING)
             addAction(AutoTapperConfig.ACTION_RESUME_CLICKING)
             addAction(AutoTapperConfig.ACTION_STOP_CLICKING)
+            addAction(AutoTapperConfig.ACTION_PREVIEW_GESTURE)
         }
         ContextCompat.registerReceiver(
             this,
@@ -326,5 +406,9 @@ class AutoClickService : AccessibilityService() {
 
         unregisterReceiver(controlReceiver)
         receiverRegistered = false
+    }
+
+    companion object {
+        private const val MAX_GESTURE_STROKES = 10
     }
 }

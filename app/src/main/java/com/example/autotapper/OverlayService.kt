@@ -43,6 +43,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.appcompat.widget.TooltipCompat
 import androidx.appcompat.app.AppCompatDelegate
 import kotlin.math.abs
+import kotlin.math.hypot
 
 class OverlayService : Service() {
 
@@ -62,8 +63,16 @@ class OverlayService : Service() {
     private var pickerView: View? = null
     private var pickerActive = false
     private var pickerCounterView: TextView? = null
+    private var gestureCaptureView: GestureCaptureView? = null
+    private var captureMode = CaptureMode.TAP
+    private val recordingGesturePoints = mutableListOf<GesturePoint>()
+    private var pendingGesture: GestureAction? = null
+    private var gestureDownTimeMs = 0L
+    private var previewInProgress = false
     private val pointMarkers: MutableList<View> = mutableListOf()
     private val markerAnimators: MutableMap<View, ObjectAnimator> = mutableMapOf()
+
+    private enum class CaptureMode { TAP, GESTURE }
 
     private var isControllerExpanded = false
     private var isClicking = false
@@ -191,6 +200,12 @@ class OverlayService : Service() {
                 AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED -> {
                     refreshControllerAlpha()
                 }
+
+                AutoTapperConfig.ACTION_PREVIEW_COMPLETED -> {
+                    finishGesturePreview(
+                        intent.getBooleanExtra(AutoTapperConfig.EXTRA_PREVIEW_SUCCESS, false)
+                    )
+                }
             }
         }
     }
@@ -309,6 +324,7 @@ class OverlayService : Service() {
             addAction(AutoTapperConfig.ACTION_CLICK_STATE_CHANGED)
             addAction(AutoTapperConfig.ACTION_POINT_SELECTED)
             addAction(AutoTapperConfig.ACTION_CONTROLLER_ALPHA_CHANGED)
+            addAction(AutoTapperConfig.ACTION_PREVIEW_COMPLETED)
         }
         ContextCompat.registerReceiver(
             this,
@@ -454,6 +470,60 @@ class OverlayService : Service() {
         refreshControllerState()
     }
 
+    private fun showCaptureHandle() {
+        if (!pickerActive) return
+        isControllerExpanded = false
+        controllerView = null
+        controllerStatusView = null
+        pointsTextView = null
+        playButtonView = null
+        addButtonView = null
+        clearButtonView = null
+        stopButtonView = null
+        settingsButtonView = null
+        settingsPanelView = null
+        settingsExpanded = false
+
+        val x = if (dockOnRight) screenWidth - dp(48) - dp(8) else dp(8)
+        val y = when {
+            collapsedAnchorY >= 0 -> collapsedAnchorY
+            floatY >= 0 -> floatY
+            else -> (screenHeight - dp(48)) / 2
+        }
+        floatX = x
+        floatY = y
+
+        val host = ensureControlHost(x, y)
+        val handle = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setImageResource(
+                if (captureMode == CaptureMode.TAP) R.drawable.ic_overlay_add
+                else R.drawable.ic_overlay_swipe
+            )
+            setColorFilter(color(R.color.primary))
+            background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
+            contentDescription = getString(R.string.capture_handle_desc)
+            setOnClickListener { clicked ->
+                clicked.post {
+                    if (pickerActive && collapsedHandleView === clicked) {
+                        showExpandedController()
+                    }
+                }
+            }
+            setOnTouchListener(dragTouchListener)
+            elevation = 8f
+            alpha = controllerAlpha
+        }
+        host.removeAllViews()
+        host.addView(handle, FrameLayout.LayoutParams(dp(48), dp(48)))
+        collapsedHandleView = handle
+        updateControlHostPosition(host, x, y)
+        handle.post {
+            if (collapsedHandleView === handle) snapToNearestEdge(host, animate = false)
+        }
+    }
+
     @Suppress("UNUSED_PARAMETER")
     private fun showExpandedController(animate: Boolean = true) {
         val wasExpanded = isControllerExpanded
@@ -590,11 +660,10 @@ class OverlayService : Service() {
             contentDescriptionRes = R.string.overlay_collapse_label
         ).apply {
             scaleX = if (dockOnRight) -1f else 1f
-            isEnabled = !isPicking
-            alpha = if (isPicking) 0.4f else 1f
             setOnClickListener { clicked ->
                 clicked.post {
-                    if (isControllerExpanded) showCollapsedHandle()
+                    if (!isControllerExpanded) return@post
+                    if (pickerActive) showCaptureHandle() else showCollapsedHandle()
                 }
             }
         }
@@ -748,9 +817,8 @@ class OverlayService : Service() {
     }
 
     private fun buildPickerControls(): LinearLayout {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(0, dp(12), 0, 0)
         }
         val counter = TextView(this).apply {
@@ -767,21 +835,107 @@ class OverlayService : Service() {
         }
         pickerCounterView = counter
         updatePickerCounter()
+
+        val candidate = pendingGesture
+        if (candidate != null) {
+            val stroke = candidate.primaryStroke
+            val start = stroke?.points?.firstOrNull()
+            val end = stroke?.points?.lastOrNull()
+            val distance = if (start != null && end != null) {
+                hypot((end.x - start.x).toDouble(), (end.y - start.y).toDouble()).toInt()
+            } else {
+                0
+            }
+            root.addView(TextView(this).apply {
+                text = getString(
+                    R.string.gesture_candidate_summary,
+                    distance,
+                    stroke?.durationMs ?: GestureStroke.DEFAULT_DURATION_MS
+                )
+                setTextColor(color(R.color.text_secondary))
+                textSize = 12f
+                background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_badge)
+                setPadding(dp(11), dp(8), dp(11), dp(8))
+            })
+            root.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(0, dp(10), 0, 0)
+                addView(buildActionButton(
+                    R.drawable.ic_overlay_delete,
+                    R.string.gesture_retry_desc
+                ).apply { setOnClickListener { clicked -> clicked.post { retryPendingGesture() } } })
+                addView(spacerView())
+                addView(buildActionButton(
+                    R.drawable.ic_overlay_play,
+                    R.string.gesture_preview_desc
+                ).apply { setOnClickListener { clicked -> clicked.post { previewPendingGesture() } } })
+                addView(spacerView())
+                addView(buildActionButton(
+                    R.drawable.ic_overlay_done,
+                    R.string.gesture_keep_desc,
+                    primary = true
+                ).apply { setOnClickListener { clicked -> clicked.post { keepPendingGesture() } } })
+            })
+            return root
+        }
+
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(counter)
+            addView(spacerView())
+            addView(buildActionButton(
+                R.drawable.ic_overlay_add,
+                R.string.capture_mode_tap_desc,
+                primary = captureMode == CaptureMode.TAP
+            ).apply {
+                setOnClickListener { clicked ->
+                    clicked.post {
+                        captureMode = CaptureMode.TAP
+                        showCaptureHandle()
+                    }
+                }
+            })
+            addView(spacerView())
+            addView(buildActionButton(
+                R.drawable.ic_overlay_swipe,
+                R.string.capture_mode_gesture_desc,
+                primary = captureMode == CaptureMode.GESTURE
+            ).apply {
+                setOnClickListener { clicked ->
+                    clicked.post {
+                        captureMode = CaptureMode.GESTURE
+                        showCaptureHandle()
+                    }
+                }
+            })
+        })
+
         val cancel = buildActionButton(
             R.drawable.ic_overlay_close,
             R.string.cancel_capture
-        ).apply { setOnClickListener { cancelPicking() } }
+        ).apply { setOnClickListener { clicked -> clicked.post { cancelPicking() } } }
+        val undo = buildActionButton(
+            R.drawable.ic_overlay_delete,
+            R.string.capture_undo_desc
+        ).apply { setOnClickListener { undoCapturedAction() } }
         val done = buildActionButton(
             R.drawable.ic_overlay_done,
             R.string.finish_capture,
             primary = true
-        ).apply { setOnClickListener { finishPicking() } }
-        row.addView(counter)
-        row.addView(spacerView())
-        row.addView(cancel)
-        row.addView(spacerView())
-        row.addView(done)
-        return row
+        ).apply { setOnClickListener { clicked -> clicked.post { finishPicking() } } }
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            setPadding(0, dp(10), 0, 0)
+            addView(undo)
+            addView(spacerView())
+            addView(cancel)
+            addView(spacerView())
+            addView(done)
+        })
+        return root
     }
 
     private fun buildSettingsPanel(): LinearLayout {
@@ -1010,8 +1164,12 @@ class OverlayService : Service() {
     private fun showPickerOverlay() {
         if (pickerActive) return
 
-        sessionStartCount = AutoTapperConfig.loadPoints(this).size
+        sessionStartCount = AutoTapperConfig.loadActions(this).size
         settingsExpanded = false
+        captureMode = CaptureMode.TAP
+        pendingGesture = null
+        recordingGesturePoints.clear()
+        previewInProgress = false
         pickerActive = true
         val view = ensurePickerLayer()
         view.visibility = View.VISIBLE
@@ -1023,19 +1181,15 @@ class OverlayService : Service() {
         rebuildExpandedControllerOnTop()
         updatePickerCounter()
         refreshMarkers()
+        showCaptureHandle()
     }
 
     private fun ensurePickerLayer(): View {
         pickerView?.let { return it }
         val view = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
-        view.findViewById<View>(R.id.capture_root).setOnTouchListener { _, event ->
-            if (pickerActive && event.action == MotionEvent.ACTION_DOWN) {
-                addPickedPoint(event.rawX.toInt(), event.rawY.toInt())
-                true
-            } else {
-                true
-            }
-        }
+        val capture = view.findViewById<GestureCaptureView>(R.id.capture_root)
+        gestureCaptureView = capture
+        capture.setOnTouchListener { _, event -> handleCaptureTouch(event) }
         view.visibility = View.GONE
         windowManager.addView(view, fullscreenLayoutParams(active = false))
         pickerView = view
@@ -1045,11 +1199,167 @@ class OverlayService : Service() {
     private fun dismissPickerOverlay() {
         pickerActive = false
         pickerCounterView = null
+        recordingGesturePoints.clear()
+        pendingGesture = null
+        previewInProgress = false
+        gestureCaptureView?.clearPath()
         val view = pickerView ?: return
         view.visibility = View.GONE
         val params = view.layoutParams as? WindowManager.LayoutParams ?: return
         params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
         runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun handleCaptureTouch(event: MotionEvent): Boolean {
+        if (!pickerActive || previewInProgress || pendingGesture != null) return true
+        return when (captureMode) {
+            CaptureMode.TAP -> {
+                if (event.actionMasked == MotionEvent.ACTION_UP) {
+                    addPickedPoint(event.rawX.toInt(), event.rawY.toInt())
+                }
+                true
+            }
+
+            CaptureMode.GESTURE -> {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        gestureDownTimeMs = event.eventTime
+                        recordingGesturePoints.clear()
+                        recordingGesturePoints.add(
+                            GesturePoint(event.rawX.toInt(), event.rawY.toInt(), 0L)
+                        )
+                        gestureCaptureView?.showPath(recordingGesturePoints)
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val previous = recordingGesturePoints.lastOrNull()
+                        val x = event.rawX.toInt()
+                        val y = event.rawY.toInt()
+                        if (recordingGesturePoints.size < MAX_GESTURE_POINTS &&
+                            (previous == null || hypot(
+                                (x - previous.x).toDouble(),
+                                (y - previous.y).toDouble()
+                            ) >= dp(4)
+                            )
+                        ) {
+                            recordingGesturePoints.add(
+                                GesturePoint(
+                                    x,
+                                    y,
+                                    (event.eventTime - gestureDownTimeMs).coerceAtLeast(0L)
+                                )
+                            )
+                            gestureCaptureView?.showPath(recordingGesturePoints)
+                        }
+                    }
+
+                    MotionEvent.ACTION_UP -> finishRecordedGesture(event)
+                    MotionEvent.ACTION_CANCEL -> {
+                        recordingGesturePoints.clear()
+                        gestureCaptureView?.clearPath()
+                    }
+                }
+                true
+            }
+        }
+    }
+
+    private fun finishRecordedGesture(event: MotionEvent) {
+        val end = GesturePoint(
+            event.rawX.toInt(),
+            event.rawY.toInt(),
+            (event.eventTime - gestureDownTimeMs).coerceAtLeast(0L)
+        )
+        if (recordingGesturePoints.lastOrNull()?.let { it.x != end.x || it.y != end.y } != false) {
+            recordingGesturePoints.add(end)
+        }
+        val start = recordingGesturePoints.firstOrNull()
+        val distance = if (start == null) 0.0 else hypot(
+            (end.x - start.x).toDouble(),
+            (end.y - start.y).toDouble()
+        )
+        if (recordingGesturePoints.size < 2 || distance < dp(24)) {
+            recordingGesturePoints.clear()
+            gestureCaptureView?.clearPath()
+            Toast.makeText(this, R.string.gesture_too_short, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val duration = (event.eventTime - gestureDownTimeMs).coerceIn(
+            AutoTapperConfig.MIN_GESTURE_DURATION_MS,
+            AutoTapperConfig.MAX_GESTURE_DURATION_MS
+        )
+        pendingGesture = GestureAction(
+            strokes = listOf(
+                GestureStroke(
+                    points = recordingGesturePoints.toList(),
+                    durationMs = duration
+                )
+            )
+        )
+        gestureCaptureView?.showPath(recordingGesturePoints)
+        showExpandedController(animate = false)
+    }
+
+    private fun keepPendingGesture() {
+        val gesture = pendingGesture ?: return
+        AutoTapperConfig.addGesture(this, gesture)
+        pendingGesture = null
+        recordingGesturePoints.clear()
+        gestureCaptureView?.clearPath()
+        broadcastPointsChanged()
+        updatePickerCounter()
+        refreshMarkers()
+        showCaptureHandle()
+    }
+
+    private fun retryPendingGesture() {
+        pendingGesture = null
+        recordingGesturePoints.clear()
+        gestureCaptureView?.clearPath()
+        showCaptureHandle()
+    }
+
+    private fun undoCapturedAction() {
+        val actions = AutoTapperConfig.loadActions(this)
+        if (actions.size <= sessionStartCount) return
+        AutoTapperConfig.saveActions(this, actions.dropLast(1))
+        broadcastPointsChanged()
+        updatePickerCounter()
+        refreshMarkers()
+    }
+
+    private fun previewPendingGesture() {
+        val gesture = pendingGesture ?: return
+        if (!PermissionUtils.isAccessibilityServiceEnabled(this, AutoClickService::class.java)) {
+            Toast.makeText(this, R.string.accessibility_permission_required, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        previewInProgress = true
+        pickerView?.visibility = View.GONE
+        controlHostView?.visibility = View.GONE
+        hideMarkers()
+        sendBroadcast(
+            Intent(AutoTapperConfig.ACTION_PREVIEW_GESTURE)
+                .setPackage(packageName)
+                .putExtra(AutoTapperConfig.EXTRA_GESTURE_JSON, AutoTapperConfig.gestureToJson(gesture))
+        )
+        pickerView?.postDelayed({
+            if (previewInProgress) finishGesturePreview(success = false)
+        }, PREVIEW_TIMEOUT_MS)
+    }
+
+    private fun finishGesturePreview(success: Boolean) {
+        if (!previewInProgress) return
+        previewInProgress = false
+        pickerView?.visibility = View.VISIBLE
+        controlHostView?.visibility = View.VISIBLE
+        pendingGesture?.primaryStroke?.let { gestureCaptureView?.showPath(it.points) }
+        showExpandedController(animate = false)
+        refreshMarkers()
+        if (!success) {
+            Toast.makeText(this, R.string.gesture_preview_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun addPickedPoint(x: Int, y: Int) {
@@ -1073,9 +1383,9 @@ class OverlayService : Service() {
     }
 
     private fun rollbackPickedPoints() {
-        val all = AutoTapperConfig.loadPoints(this)
+        val all = AutoTapperConfig.loadActions(this)
         if (all.size > sessionStartCount) {
-            AutoTapperConfig.savePoints(this, all.take(sessionStartCount))
+            AutoTapperConfig.saveActions(this, all.take(sessionStartCount))
         }
         broadcastPointsChanged()
     }
@@ -1083,7 +1393,7 @@ class OverlayService : Service() {
     private fun updatePickerCounter() {
         pickerCounterView?.text = getString(
             R.string.picker_counter_template,
-            AutoTapperConfig.loadPoints(this).size
+            AutoTapperConfig.loadActions(this).size
         )
     }
 
@@ -1127,7 +1437,7 @@ class OverlayService : Service() {
     private fun removeLastPoint() {
         if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) return
 
-        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
+        if (AutoTapperConfig.loadActions(this).isEmpty()) {
             Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
             return
         }
@@ -1140,7 +1450,7 @@ class OverlayService : Service() {
 
     private fun clearAllPoints() {
         if (isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) return
-        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
+        if (AutoTapperConfig.loadActions(this).isEmpty()) {
             Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
             return
         }
@@ -1180,7 +1490,7 @@ class OverlayService : Service() {
             return
         }
 
-        if (AutoTapperConfig.loadPoints(this).isEmpty()) {
+        if (AutoTapperConfig.loadActions(this).isEmpty()) {
             Toast.makeText(this, R.string.point_required, Toast.LENGTH_SHORT).show()
             return
         }
@@ -1261,9 +1571,13 @@ class OverlayService : Service() {
         ).coerceAtLeast(100L)
         val randomExtraMs = prefs.getLong(AutoTapperConfig.KEY_RANDOM_EXTRA_MS, 80L).coerceAtLeast(0L)
         val repeatCount = prefs.getInt(AutoTapperConfig.KEY_REPEAT_COUNT, 0).coerceAtLeast(0)
-        val currentPoint = AutoTapperConfig.loadPoints(this).getOrNull(currentPointIndex)
-        val intervalMs = currentPoint?.delayMs?.takeIf { it > 0L } ?: globalIntervalMs
-        val holdDurationMs = currentPoint?.holdDurationMs ?: TapPoint.DEFAULT_HOLD_DURATION_MS
+        val currentAction = AutoTapperConfig.loadActions(this).getOrNull(currentPointIndex)
+        val intervalMs = currentAction?.delayMs?.takeIf { it > 0L } ?: globalIntervalMs
+        val actionDurationMs = when (currentAction) {
+            is TapPoint -> currentAction.holdDurationMs
+            is GestureAction -> currentAction.primaryStroke?.durationMs
+            null -> null
+        } ?: TapPoint.DEFAULT_HOLD_DURATION_MS
 
         val repeatText = if (repeatCount == 0) {
             getString(R.string.overlay_repeat_infinite)
@@ -1287,23 +1601,36 @@ class OverlayService : Service() {
             intervalMs + randomExtraMs,
             repeatText,
             roundsCompleted,
-            holdDurationMs
+            actionDurationMs
         )
     }
 
     private fun buildControllerPointsText(): String {
-        val points = AutoTapperConfig.loadPoints(this)
-        if (points.isEmpty()) {
+        val actions = AutoTapperConfig.loadActions(this)
+        if (actions.isEmpty()) {
             return getString(R.string.overlay_point_missing)
         }
         val maxShown = 2
-        val head = points.take(maxShown).joinToString("  ") { "(${it.x},${it.y})" }
-        val coordinates = if (points.size > maxShown) {
-            "$head  ${getString(R.string.overlay_points_more, points.size - maxShown)}"
+        val head = actions.take(maxShown).joinToString("  ") { action ->
+            when (action) {
+                is TapPoint -> "(${action.x},${action.y})"
+                is GestureAction -> {
+                    val start = action.primaryStroke?.points?.firstOrNull()
+                    val end = action.primaryStroke?.points?.lastOrNull()
+                    if (start != null && end != null) {
+                        "(${start.x},${start.y})→(${end.x},${end.y})"
+                    } else {
+                        getString(R.string.gesture_item_unknown)
+                    }
+                }
+            }
+        }
+        val coordinates = if (actions.size > maxShown) {
+            "$head  ${getString(R.string.overlay_points_more, actions.size - maxShown)}"
         } else {
             head
         }
-        val current = points.getOrNull(currentPointIndex)
+        val current = actions.getOrNull(currentPointIndex)
         if ((isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) &&
             current != null
         ) {
@@ -1319,13 +1646,13 @@ class OverlayService : Service() {
     }
 
     private fun refreshMarkers() {
-        val points = AutoTapperConfig.loadPoints(this)
-        if (!isControllerExpanded || points.isEmpty()) {
+        val actions = AutoTapperConfig.loadActions(this)
+        if ((!isControllerExpanded && !pickerActive) || actions.isEmpty()) {
             hideMarkers()
             return
         }
 
-        while (pointMarkers.size < points.size) {
+        while (pointMarkers.size < actions.size) {
             val marker = View(this).apply {
                 background = roundedDrawable(
                     fillColor = applyAlpha(color(R.color.accent), 0x66),
@@ -1337,15 +1664,21 @@ class OverlayService : Service() {
             windowManager.addView(marker, markerLayoutParams(0, 0))
             pointMarkers.add(marker)
         }
-        while (pointMarkers.size > points.size) {
+        while (pointMarkers.size > actions.size) {
             val removed = pointMarkers.removeAt(pointMarkers.size - 1)
             stopMarkerPulse(removed)
             removeViewSafely(removed)
         }
 
-        points.forEachIndexed { index, point ->
+        actions.forEachIndexed { index, action ->
             val marker = pointMarkers[index]
-            windowManager.updateViewLayout(marker, markerLayoutParams(point.x, point.y))
+            val anchor = when (action) {
+                is TapPoint -> action.x to action.y
+                is GestureAction -> action.primaryStroke?.points?.firstOrNull()?.let {
+                    it.x to it.y
+                } ?: (0 to 0)
+            }
+            windowManager.updateViewLayout(marker, markerLayoutParams(anchor.first, anchor.second))
             if ((isClicking || isPaused || pendingAction != AutoTapperConfig.PENDING_NONE) &&
                 index == currentPointIndex
             ) {
@@ -1492,5 +1825,7 @@ class OverlayService : Service() {
         private const val NOTIFICATION_CHANNEL_ID = "autotapper_overlay_controller"
         private const val NOTIFICATION_ID = 1001
         private const val SNAP_DURATION = 220L
+        private const val PREVIEW_TIMEOUT_MS = 7_000L
+        private const val MAX_GESTURE_POINTS = 256
     }
 }

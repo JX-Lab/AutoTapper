@@ -36,7 +36,7 @@ class ProfileListAdapter(
         holder.name.text = profile.name
         holder.summary.text = context.getString(
             R.string.profile_summary_template,
-            profile.points.size,
+            profile.actions.size,
             profile.intervalMs,
             if (profile.repeatCount == 0) context.getString(R.string.overlay_repeat_infinite)
             else context.getString(R.string.overlay_repeat_finite, profile.repeatCount)

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <View
+    <com.example.autotapper.GestureCaptureView
         android:id="@+id/capture_root"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
