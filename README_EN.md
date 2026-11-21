@@ -16,7 +16,7 @@
 
 ## What is AutoTapper?
 
-AutoTapper is a lightweight Android auto-tapping tool. It performs tap gestures through the system accessibility service and uses a draggable floating controller to capture points, adjust settings, start, pause, and stop from any app.
+AutoTapper is a lightweight Android automation tool. It performs taps and recorded single-finger paths through the system accessibility service and uses a draggable floating controller to record actions, adjust settings, start, pause, and stop from any app.
 
 It can cycle through multiple saved points in order, which is useful for authorized repetitive testing, demonstrations, and device-operation assistance. Enabling accessibility never starts tapping by itself: the user must explicitly press play on the floating controller.
 
@@ -25,6 +25,7 @@ It can cycle through multiple saved points in order, which is useful for authori
 - **Ordered multi-point tapping:** fixed or infinite rounds through every saved point.
 - **Complete floating controller:** capture points, adjust timing, start, pause, stop, and delete points without leaving the target app.
 - **Integrated point capture:** plus enters point-selection mode, while count, cancel, and done controls finish the session; opening the controller never starts capture by itself.
+- **Swipe recording and preview:** draw a single-finger path on the target screen, preview its real scrolling effect, then keep or retry it. Taps and swipes can share one ordered setup.
 - **Visible tap points:** translucent markers show saved positions and pulse at the active point.
 - **Timing controls:** base interval plus an optional random extra delay; minimum interval is 100 ms.
 - **Pause and resume:** preserve the current point, per-point tap progress, and completed rounds.
@@ -54,7 +55,7 @@ It can cycle through multiple saved points in order, which is useful for authori
 | Permission | Purpose | Used when |
 | --- | --- | --- |
 | Display over other apps | Controller, point picker, and point markers | The floating controller is open |
-| Accessibility service | Dispatch tap gestures at saved coordinates | The user starts tapping |
+| Accessibility service | Dispatch saved taps and single-finger paths | The user starts a run or previews a gesture |
 | Foreground service | Keep the controller available while switching apps | The controller is running |
 | Internet | Query this repository's GitHub release | Automatic or manual update check |
 | Notifications | Controller status and update alerts | Notifications are allowed by the system |
@@ -66,7 +67,7 @@ AutoTapper does not read screen text or upload saved points. Coordinates and set
 1. Download and install an APK from [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest).
 2. Grant overlay permission and enable the AutoTapper accessibility service; granted rows disappear automatically.
 3. Configure global timing. Every numeric field explains its valid range and effect; individual points can override delay, tap count, and press duration.
-4. Open the floating controller. It does not start point capture; press the plus icon only when you want to add points.
+4. Open the floating controller. It does not start capture; press plus, then choose tap or swipe in the recording controls. The controller shrinks to an edge handle while recording so it does not cover the target.
 5. Use play to start; the controller collapses automatically so it does not cover the target. Reopen it to pause or resume. The square stops while running and becomes one-tap clear-all after stopping; trash removes the last point.
 
 <p align="center">
@@ -75,10 +76,10 @@ AutoTapper does not read screen text or upload saved points. Coordinates and set
 
 ## Tap sequence
 
-With points A, B, and C saved, one round is:
+With tap A, an upward swipe, and tap B saved, one round is:
 
 ```text
-A → wait → B → wait → C → round complete → A → …
+tap A → wait → swipe up → wait → tap B → round complete → …
 ```
 
 | Setting | Valid range and effect | Example |
@@ -94,7 +95,7 @@ A 400 ms base interval and 80 ms random delay produce a 400–480 ms wait after 
 
 ## Floating controller
 
-- **Plus:** enter point-selection mode and add multiple points; finish or cancel from the same controller.
+- **Plus:** enter recording mode and choose tap or swipe; finish, cancel, and undo from the same controller.
 - **Trash:** remove the last point.
 - **Play / pause:** start, pause, or resume the current setup. Starting automatically collapses the controller so it does not cover the target.
 - **Square:** stop while running; after stopping, the same button becomes one-tap clear-all.
@@ -141,8 +142,8 @@ Thank you to the contributors who directly shaped AutoTapper's features and expe
 
 | Contributor | Main contributions |
 | --- | --- |
-| [@YangZiyueZY](https://github.com/YangZiyueZY) | Contributed ordered multi-point tapping, the draggable floating controller, point management and migration, update checks, and release automation in [PR #5](https://github.com/JX-Lab/AutoTapper/pull/5). Also delivered the main-screen and overlay redesign, opacity control, large-screen layouts, and the README hero and workflow visuals. |
-| [@Rose088211](https://github.com/Rose088211) | Contributed the initial English UI resources and English README in [PR #4](https://github.com/JX-Lab/AutoTapper/pull/4), establishing the foundation for the project's bilingual support. |
+| [@YangZiyueZY](https://github.com/YangZiyueZY) | Added ordered multi-point tapping, the first draggable overlay controller, point management and legacy migration, update checks, and release automation to an early version in [PR #5](https://github.com/JX-Lab/AutoTapper/pull/5), and created the README hero and workflow visuals. That PR also supplied the UI, opacity control, and large-screen foundation used at the time; the current main screen and controller were redesigned in later releases and are not the same PR #5 UI. |
+| [@Rose088211](https://github.com/Rose088211) | Added the initial English resources and English README in [PR #4](https://github.com/JX-Lab/AutoTapper/pull/4), establishing the early bilingual foundation. The current English UI and documentation have since been expanded and rewritten. |
 
 If your name or contribution summary needs correction, please open an Issue or PR and we will update it according to the commit history.
 
@@ -163,7 +164,7 @@ Bug reports, documentation improvements, translations, and focused feature pull 
 
 ## Known limitations
 
-- Swipe and complex action sequences are not supported yet; swipe actions are being designed, while the current release remains tap-and-hold only.
+- Single-finger path recording is supported; multi-touch pinch, two-finger swipes, and hardware-button actions are not yet available.
 - Saved coordinates do not adapt automatically to layout changes or screen rotation.
 - Scheduled start is still under discussion; e-commerce server-time synchronization is not implemented.
 
