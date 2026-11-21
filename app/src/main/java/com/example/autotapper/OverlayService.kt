@@ -133,12 +133,20 @@ class OverlayService : Service() {
                 true
             }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP -> {
                 if (!dragActive) {
                     view.performClick()
                 } else {
                     snapToNearestEdge(controlHostView ?: view, animate = true)
                 }
+                true
+            }
+
+            MotionEvent.ACTION_CANCEL -> {
+                if (dragActive) {
+                    snapToNearestEdge(controlHostView ?: view, animate = true)
+                }
+                dragActive = false
                 true
             }
 
@@ -424,7 +432,11 @@ class OverlayService : Service() {
             setImageResource(R.drawable.ic_floating_handle)
             setColorFilter(color(R.color.primary))
             background = ContextCompat.getDrawable(this@OverlayService, R.drawable.bg_floating_handle)
-            setOnClickListener { showExpandedController() }
+            setOnClickListener { clicked ->
+                clicked.post {
+                    if (collapsedHandleView === clicked) showExpandedController()
+                }
+            }
             setOnTouchListener(dragTouchListener)
             elevation = 8f
             alpha = controllerAlpha
@@ -580,7 +592,11 @@ class OverlayService : Service() {
             scaleX = if (dockOnRight) -1f else 1f
             isEnabled = !isPicking
             alpha = if (isPicking) 0.4f else 1f
-            setOnClickListener { showCollapsedHandle() }
+            setOnClickListener { clicked ->
+                clicked.post {
+                    if (isControllerExpanded) showCollapsedHandle()
+                }
+            }
         }
 
         val closeButton = buildActionButton(
@@ -937,7 +953,6 @@ class OverlayService : Service() {
         AutoTapperConfig.applyDefaultPointSettingsToAll(this)
         broadcastPointsChanged()
         refreshControllerState()
-        Toast.makeText(this, R.string.overlay_settings_saved, Toast.LENGTH_SHORT).show()
         toggleSettingsPanel()
     }
 
@@ -1042,19 +1057,12 @@ class OverlayService : Service() {
         broadcastPointsChanged(x, y)
         updatePickerCounter()
         refreshMarkers()
-        Toast.makeText(this, getString(R.string.point_added_toast, x, y), Toast.LENGTH_SHORT)
-            .show()
     }
 
     private fun finishPicking() {
         dismissPickerOverlay()
         rebuildExpandedControllerOnTop()
         refreshMarkers()
-        Toast.makeText(
-            this,
-            getString(R.string.picking_finished_toast, AutoTapperConfig.loadPoints(this).size),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     private fun cancelPicking() {
@@ -1062,7 +1070,6 @@ class OverlayService : Service() {
         dismissPickerOverlay()
         rebuildExpandedControllerOnTop()
         refreshMarkers()
-        Toast.makeText(this, R.string.picking_cancelled_toast, Toast.LENGTH_SHORT).show()
     }
 
     private fun rollbackPickedPoints() {
@@ -1129,7 +1136,6 @@ class OverlayService : Service() {
         broadcastPointsChanged()
         refreshControllerState()
         refreshMarkers()
-        Toast.makeText(this, R.string.point_removed_toast, Toast.LENGTH_SHORT).show()
     }
 
     private fun clearAllPoints() {
@@ -1142,7 +1148,6 @@ class OverlayService : Service() {
         broadcastPointsChanged()
         refreshControllerState()
         refreshMarkers()
-        Toast.makeText(this, R.string.clear_all_done, Toast.LENGTH_SHORT).show()
     }
 
     private fun handleStopOrClearAll() {

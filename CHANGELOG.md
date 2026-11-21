@@ -8,6 +8,7 @@
 - Simplified opening behavior: the main button opens the controller without starting point capture.
 - Added separate delete-last and stop/clear-all controls; after stopping, the same button clears all points with one tap.
 - The controller now collapses automatically when tapping starts and reuses persistent windows for collapse, expand, and point-picking transitions.
+- Removed routine success Toasts during normal controller operations; validation and permission errors still appear.
 - Replaced overlay text controls with compact icon buttons and fixed picker-button overflow.
 - Permission rows now disappear when access is granted and return only when access is lost.
 - Added a concise text-only tutorial from the top-right help button.

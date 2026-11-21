@@ -118,11 +118,6 @@ class MainActivity : AppCompatActivity() {
             onEdit = { profile ->
                 activateProfile(profile.id)
                 if (!configExpanded) toggleConfigDrawer()
-                Toast.makeText(
-                    this,
-                    getString(R.string.profile_edit_loaded, profile.name),
-                    Toast.LENGTH_SHORT
-                ).show()
             },
             onDelete = { profile -> confirmDeleteProfile(profile) }
         )
@@ -273,7 +268,6 @@ class MainActivity : AppCompatActivity() {
         AutoTapperConfig.applyDefaultPointSettingsToAll(this)
         loadAndShowPoints()
         sendBroadcast(Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName))
-        Toast.makeText(this, R.string.point_defaults_applied, Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleConfigDrawer() {
@@ -371,8 +365,6 @@ class MainActivity : AppCompatActivity() {
         rvPoints.visibility = if (points.isEmpty()) View.GONE else View.VISIBLE
         tvPointsCount.text = getString(R.string.points_count_badge, points.size)
         updateConfigSummary()
-        Toast.makeText(this, getString(R.string.point_deleted_toast, index + 1), Toast.LENGTH_SHORT)
-            .show()
     }
 
     private fun showPointEditor(index: Int) {
@@ -420,11 +412,6 @@ class MainActivity : AppCompatActivity() {
                 sendBroadcast(
                     Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName)
                 )
-                Toast.makeText(
-                    this,
-                    getString(R.string.point_updated_toast, index + 1),
-                    Toast.LENGTH_SHORT
-                ).show()
                 dialog.dismiss()
             }
         }
@@ -524,27 +511,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveProfileNow(name: String) {
-        val profile = AutoTapperConfig.saveCurrentProfile(this, name)
+        AutoTapperConfig.saveCurrentProfile(this, name)
         refreshActiveProfile()
         refreshProfilesList()
-        Toast.makeText(
-            this,
-            getString(R.string.profile_saved, profile.name),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     private fun activateProfile(profileId: String) {
         sendBroadcast(Intent(AutoTapperConfig.ACTION_STOP_CLICKING).setPackage(packageName))
-        val loaded = AutoTapperConfig.activateProfile(this, profileId) ?: return
+        AutoTapperConfig.activateProfile(this, profileId) ?: return
         loadSavedConfig()
         loadAndShowPoints()
         sendBroadcast(Intent(AutoTapperConfig.ACTION_POINT_SELECTED).setPackage(packageName))
-        Toast.makeText(
-            this,
-            getString(R.string.profile_loaded, loaded.name),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     private fun confirmDeleteProfile(profile: AutomationProfile) {
@@ -555,7 +532,6 @@ class MainActivity : AppCompatActivity() {
                 AutoTapperConfig.deleteProfile(this, profile.id)
                 refreshActiveProfile()
                 refreshProfilesList()
-                Toast.makeText(this, R.string.profile_deleted, Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton(R.string.cancel_capture, null)
             .show()
@@ -574,7 +550,6 @@ class MainActivity : AppCompatActivity() {
             putExtra(AutoTapperConfig.EXTRA_START_PICKING, false)
         }
         ContextCompat.startForegroundService(this, intent)
-        Toast.makeText(this, R.string.overlay_started, Toast.LENGTH_SHORT).show()
     }
 
     private fun applyThemePreference() {

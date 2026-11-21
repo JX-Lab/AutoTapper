@@ -51,7 +51,6 @@ class AutoClickService : AccessibilityService() {
         super.onServiceConnected()
         registerControlReceiver()
         broadcastClickState()
-        Toast.makeText(this, R.string.accessibility_ready, Toast.LENGTH_SHORT).show()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
@@ -77,7 +76,7 @@ class AutoClickService : AccessibilityService() {
         }
 
         if (repeatCount > 0 && roundsCompleted >= repeatCount) {
-            finishStop(showToast = true, message = getString(R.string.click_completed, roundsCompleted))
+            finishStop(showToast = false, message = null)
             return
         }
 
@@ -129,10 +128,7 @@ class AutoClickService : AccessibilityService() {
                     broadcastClickState()
 
                     if (repeatCount > 0 && roundsCompleted >= repeatCount) {
-                        finishStop(
-                            showToast = true,
-                            message = getString(R.string.click_completed, roundsCompleted)
-                        )
+                        finishStop(showToast = false, message = null)
                         return
                     }
 
@@ -214,7 +210,6 @@ class AutoClickService : AccessibilityService() {
         broadcastClickState()
         clearPendingClicks()
         if (!gestureInFlight) performClick()
-        Toast.makeText(this, R.string.click_started, Toast.LENGTH_SHORT).show()
     }
 
     private fun pauseClicking() {
@@ -225,12 +220,10 @@ class AutoClickService : AccessibilityService() {
             pendingAction = AutoTapperConfig.PENDING_PAUSE
             isPaused = false
             broadcastClickState()
-            Toast.makeText(this, R.string.click_pause_pending, Toast.LENGTH_SHORT).show()
         } else {
             pendingAction = AutoTapperConfig.PENDING_NONE
             isPaused = true
             broadcastClickState()
-            Toast.makeText(this, R.string.click_paused, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -241,7 +234,6 @@ class AutoClickService : AccessibilityService() {
             isPaused = false
             isClicking = true
             broadcastClickState()
-            Toast.makeText(this, R.string.click_resumed, Toast.LENGTH_SHORT).show()
             return
         }
         if (!isPaused) return
@@ -249,7 +241,6 @@ class AutoClickService : AccessibilityService() {
         isClicking = true
         broadcastClickState()
         if (!gestureInFlight) performClick()
-        Toast.makeText(this, R.string.click_resumed, Toast.LENGTH_SHORT).show()
     }
 
     private fun requestStop() {
@@ -259,9 +250,8 @@ class AutoClickService : AccessibilityService() {
             isPaused = false
             pendingAction = AutoTapperConfig.PENDING_STOP
             broadcastClickState()
-            Toast.makeText(this, R.string.click_stop_pending, Toast.LENGTH_SHORT).show()
         } else {
-            finishStop(showToast = true, message = getString(R.string.click_stopped))
+            finishStop(showToast = false, message = null)
         }
     }
 
