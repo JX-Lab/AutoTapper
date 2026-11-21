@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,60 +8,4 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/picker_scrim" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_picker"
-        style="@style/Card.AutoTapper"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_margin="10dp"
-        app:cardBackgroundColor="@color/surface_container"
-        app:cardCornerRadius="18dp"
-        app:cardElevation="8dp"
-        app:strokeColor="@color/primary"
-        app:strokeWidth="1dp">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingTop="6dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="6dp">
-
-            <TextView
-                android:id="@+id/tv_picker_counter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_badge"
-                android:paddingStart="11dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="11dp"
-                android:paddingBottom="6dp"
-                android:textAppearance="@style/Text.AutoTapper.Caption"
-                android:textColor="@color/on_primary_container" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_cancel_capture"
-                style="@style/Button.AutoTapper.Text"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_marginStart="4dp"
-                android:minHeight="40dp"
-                android:text="@string/cancel_capture" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_finish_capture"
-                style="@style/Button.AutoTapper.Primary"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_marginStart="2dp"
-                android:minHeight="40dp"
-                android:text="@string/finish_capture" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
 </FrameLayout>
