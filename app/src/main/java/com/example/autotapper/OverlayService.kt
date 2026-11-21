@@ -1336,7 +1336,14 @@ class OverlayService : Service() {
             return
         }
         previewInProgress = true
-        pickerView?.visibility = View.GONE
+        pickerView?.let { picker ->
+            val params = picker.layoutParams as? WindowManager.LayoutParams
+            if (params != null) {
+                params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                runCatching { windowManager.updateViewLayout(picker, params) }
+            }
+            picker.visibility = View.GONE
+        }
         controlHostView?.visibility = View.GONE
         hideMarkers()
         sendBroadcast(
@@ -1352,7 +1359,14 @@ class OverlayService : Service() {
     private fun finishGesturePreview(success: Boolean) {
         if (!previewInProgress) return
         previewInProgress = false
-        pickerView?.visibility = View.VISIBLE
+        pickerView?.let { picker ->
+            picker.visibility = View.VISIBLE
+            val params = picker.layoutParams as? WindowManager.LayoutParams
+            if (params != null) {
+                params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+                runCatching { windowManager.updateViewLayout(picker, params) }
+            }
+        }
         controlHostView?.visibility = View.VISIBLE
         pendingGesture?.primaryStroke?.let { gestureCaptureView?.showPath(it.points) }
         showExpandedController(animate = false)
