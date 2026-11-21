@@ -173,7 +173,7 @@
         android:paddingEnd="8dp"
         android:paddingBottom="8dp">
         <TextView android:id="@+id/tv_profile_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="1" android:ellipsize="end" android:textAppearance="@style/Text.AutoTapper.Body" android:textColor="@color/text_primary" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/btn_profile_save" style="@style/Button.AutoTapper.Primary" android:layout_width="wrap_content" android:layout_height="48dp" android:minHeight="48dp" android:text="@string/profile_save" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_profile_save" style="@style/Button.AutoTapper.Primary" android:layout_width="wrap_content" android:layout_height="48dp" android:minHeight="48dp" android:maxLines="1" android:text="@string/profile_save" />
     </LinearLayout>
 
     <com.google.android.material.card.MaterialCardView

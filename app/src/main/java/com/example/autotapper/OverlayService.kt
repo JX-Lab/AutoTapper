@@ -79,7 +79,6 @@ class OverlayService : Service() {
     private var collapsedAnchorY = -1
     private var dockOnRight = true
     private var snapAnimator: ValueAnimator? = null
-    private var clearAllArmed = false
     private var settingsExpanded = false
 
     // 控制器透明度（0.3 ~ 1.0）
@@ -141,6 +140,7 @@ class OverlayService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 AutoTapperConfig.ACTION_CLICK_STATE_CHANGED -> {
+                    val wasClicking = isClicking
                     isClicking = intent.getBooleanExtra(AutoTapperConfig.EXTRA_IS_CLICKING, false)
                     isPaused = intent.getBooleanExtra(AutoTapperConfig.EXTRA_IS_PAUSED, false)
                     currentPointIndex =
@@ -157,6 +157,9 @@ class OverlayService : Service() {
                         AutoTapperConfig.EXTRA_PENDING_ACTION,
                         AutoTapperConfig.PENDING_NONE
                     )
+                    if (!wasClicking && isClicking && isControllerExpanded) {
+                        showCollapsedHandle()
+                    }
                     refreshControllerState()
                     refreshMarkers()
                     refreshNotification()
@@ -246,7 +249,6 @@ class OverlayService : Service() {
         pointMarkers.clear()
         markerAnimators.clear()
         controllerView = null
-        clearAllArmed = false
         collapsedHandleView = null
         controllerStatusView = null
         pointsTextView = null
@@ -383,7 +385,6 @@ class OverlayService : Service() {
         playButtonView = null
         addButtonView = null
         clearButtonView = null
-        clearAllArmed = false
         stopButtonView = null
         settingsButtonView = null
         settingsPanelView = null
@@ -409,41 +410,45 @@ class OverlayService : Service() {
             setOnClickListener { showExpandedController() }
             setOnTouchListener(dragTouchListener)
             elevation = 8f
-            alpha = if (animate) 0f else controllerAlpha
-            translationX = if (animate) dp(48).toFloat() else 0f
+            alpha = if (animate && previousController != null) 0f else controllerAlpha
         }
-        windowManager.addView(handle, floatLayoutParams(x, y))
         collapsedHandleView = handle
 
-        handle.post {
-            if (collapsedHandleView !== handle) {
-                return@post
+        val addHandle = {
+            if (collapsedHandleView === handle && !handle.isAttachedToWindow) {
+                windowManager.addView(handle, floatLayoutParams(x, y))
+                handle.post {
+                    if (collapsedHandleView !== handle) {
+                        return@post
+                    }
+                    snapToNearestEdge(handle, animate = false)
+                }
+                if (animate && previousController != null) {
+                    handle.animate()
+                        .alpha(controllerAlpha)
+                        .setDuration(ANIMATION_DURATION)
+                        .setInterpolator(AccelerateDecelerateInterpolator())
+                        .start()
+                }
             }
-            if (floatX < 0 || floatY < 0) {
-                floatX = screenWidth - handle.width - dp(8)
-                floatY = (screenHeight - handle.height) / 2
-                collapsedAnchorY = floatY
-            }
-            snapToNearestEdge(handle, animate = false)
         }
 
-        if (animate) {
-            previousController?.animate()
-                ?.alpha(0f)
-                ?.translationX((-dp(48)).toFloat())
-                ?.setDuration(ANIMATION_DURATION)
-                ?.setInterpolator(AccelerateDecelerateInterpolator())
-                ?.withEndAction { removeViewSafely(previousController) }
-                ?.start()
-
-            handle.animate()
-                .alpha(controllerAlpha)
-                .translationX(0f)
-                .setDuration(ANIMATION_DURATION)
+        if (animate && previousController != null) {
+            previousController.isEnabled = false
+            previousController.animate()
+                .alpha(0f)
+                .scaleX(0.96f)
+                .scaleY(0.96f)
+                .setDuration(ANIMATION_DURATION / 2)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    removeViewSafely(previousController)
+                    addHandle()
+                }
                 .start()
         } else {
             removeViewSafely(previousController)
+            addHandle()
         }
 
         refreshControllerState()
@@ -549,7 +554,6 @@ class OverlayService : Service() {
     }
 
     private fun buildControllerView(): LinearLayout {
-        clearAllArmed = false
         val isPicking = pickerView != null
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -1098,37 +1102,11 @@ class OverlayService : Service() {
             Toast.makeText(this, R.string.no_point_to_delete_toast, Toast.LENGTH_SHORT).show()
             return
         }
-        if (!clearAllArmed) {
-            clearAllArmed = true
-            stopButtonView?.background = roundedDrawable(
-                fillColor = color(R.color.error_container),
-                strokeColor = color(R.color.danger),
-                radiusDp = 22f,
-                shape = GradientDrawable.OVAL
-            )
-            Toast.makeText(this, R.string.clear_all_confirm, Toast.LENGTH_SHORT).show()
-            stopButtonView?.postDelayed(
-                { resetClearAllConfirmation() },
-                CLEAR_CONFIRM_DURATION
-            )
-            return
-        }
-
         AutoTapperConfig.clearPoints(this)
-        resetClearAllConfirmation()
         broadcastPointsChanged()
         refreshControllerState()
         refreshMarkers()
         Toast.makeText(this, R.string.clear_all_done, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun resetClearAllConfirmation() {
-        clearAllArmed = false
-        stopButtonView?.background = ContextCompat.getDrawable(
-            this,
-            R.drawable.bg_circular_button
-        )
-        stopButtonView?.setColorFilter(color(R.color.danger))
     }
 
     private fun handleStopOrClearAll() {
@@ -1216,7 +1194,6 @@ class OverlayService : Service() {
             isEnabled = hasPoint && !sessionActive
             alpha = if (isEnabled) 1f else 0.45f
         }
-        if (!hasPoint || sessionActive) resetClearAllConfirmation()
         stopButtonView?.apply {
             isEnabled = (sessionActive && pendingAction != AutoTapperConfig.PENDING_STOP) ||
                 (!sessionActive && hasPoint)
@@ -1474,6 +1451,5 @@ class OverlayService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val ANIMATION_DURATION = 250L
         private const val SNAP_DURATION = 220L
-        private const val CLEAR_CONFIRM_DURATION = 2_500L
     }
 }

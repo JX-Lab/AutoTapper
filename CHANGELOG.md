@@ -6,7 +6,8 @@
 - Added an in-app language selector for System, Simplified Chinese, and English.
 - Added edge snapping and right-edge default placement for the floating controller.
 - Simplified opening behavior: the main button opens the controller without starting point capture.
-- Added separate delete-last and two-step clear-all controls.
+- Added separate delete-last and stop/clear-all controls; after stopping, the same button clears all points with one tap.
+- The floating controller now collapses automatically when tapping starts, with a flicker-free window transition.
 - Replaced overlay text controls with compact icon buttons and fixed picker-button overflow.
 - Permission rows now disappear when access is granted and return only when access is lost.
 - Added an in-app tutorial from the top-right help button.
