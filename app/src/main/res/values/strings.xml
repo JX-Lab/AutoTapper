@@ -119,9 +119,9 @@
     <string name="tutorial_step_2_title">2 · Open the controller</string>
     <string name="tutorial_step_2_body">The main button only opens the floating controller. It does not enter point-picking mode.</string>
     <string name="tutorial_step_3_title">3 · Add points</string>
-    <string name="tutorial_step_3_body">Tap the plus icon, touch each target position, then use the check icon in the compact top bar to finish.</string>
+    <string name="tutorial_step_3_body">The translucent gray panel in the screenshot is the controller; the target app is underneath. Tap plus, touch each target, then tap check.</string>
     <string name="tutorial_step_4_title">4 · Run and control</string>
-    <string name="tutorial_step_4_body">Play starts and pauses; the controller collapses automatically after starting. Trash removes the last point. The square stops a run, then clears all points on its next tap.</string>
+    <string name="tutorial_step_4_body">The controller collapses after starting; tap the edge ball to reopen it. Play pauses or resumes, trash removes the last point, and square stops then clears all on its next tap.</string>
     <string name="tutorial_step_5_title">5 · Move and collapse</string>
     <string name="tutorial_step_5_body">Drag the controller or ball; it snaps to the nearest edge. Use the chevron icon to collapse and × to close.</string>
     <string name="tutorial_done">Got it</string>

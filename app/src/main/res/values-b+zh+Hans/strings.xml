@@ -119,9 +119,9 @@
     <string name="tutorial_step_2_title">2 · 打开悬浮控制器</string>
     <string name="tutorial_step_2_body">主界面按钮只负责打开控制器，不会自动进入取点模式。</string>
     <string name="tutorial_step_3_title">3 · 添加点位</string>
-    <string name="tutorial_step_3_body">点击加号，再依次触摸目标位置；完成后点击顶部紧凑栏里的对勾图标。</string>
+    <string name="tutorial_step_3_body">截图中的灰色半透明面板是悬浮控制器，底下是目标应用。点击加号后依次触摸目标位置，完成后点击对勾。</string>
     <string name="tutorial_step_4_title">4 · 运行与控制</string>
-    <string name="tutorial_step_4_body">播放用于开始和暂停，开始后控制器会自动收起。垃圾桶删除最后一点；运行时方块用于停止，停止后再点同一按钮会清空全部。</string>
+    <string name="tutorial_step_4_body">开始后控制器会自动收起；点击边缘悬浮球可重新展开。播放用于暂停和继续，垃圾桶删除最后一点；方块先停止，再点一次会清空全部。</string>
     <string name="tutorial_step_5_title">5 · 移动与收起</string>
     <string name="tutorial_step_5_body">拖动控制器或悬浮球后会自动吸附最近边缘；箭头图标用于收起，× 用于关闭。</string>
     <string name="tutorial_done">知道了</string>
