@@ -10,7 +10,8 @@
 - The floating controller now collapses automatically when tapping starts, with a flicker-free window transition.
 - Replaced overlay text controls with compact icon buttons and fixed picker-button overflow.
 - Permission rows now disappear when access is granted and return only when access is lost.
-- Added an in-app tutorial from the top-right help button.
+- Added an in-app tutorial from the top-right help button, using real app screenshots for each controller action.
+- Expanded every numeric click-setting hint with its valid range and the effect of higher or lower values.
 
 ## 1.2.0
 
