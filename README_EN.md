@@ -16,24 +16,26 @@
 
 ## What is AutoTapper?
 
-AutoTapper is a lightweight Android auto-tapping tool. It performs tap gestures through the system accessibility service and uses a draggable floating controller to record points, start, and stop from any app.
+AutoTapper is a lightweight Android auto-tapping tool. It performs tap gestures through the system accessibility service and uses a draggable floating controller to capture points, adjust settings, start, pause, and stop from any app.
 
-It can cycle through multiple saved points in order, which is useful for authorized repetitive testing, demonstrations, and device-operation assistance. Enabling accessibility never starts tapping by itself: the user must press `GO` or **Start Tapping**.
+It can cycle through multiple saved points in order, which is useful for authorized repetitive testing, demonstrations, and device-operation assistance. Enabling accessibility never starts tapping by itself: the user must explicitly press play on the floating controller.
 
 ## Highlights
 
 - **Ordered multi-point tapping:** fixed or infinite rounds through every saved point.
-- **Draggable floating controller:** use `+`, `DEL`, `GO`, and `STOP` from any app.
+- **Complete floating controller:** capture points, adjust timing, start, pause, stop, and delete points without leaving the target app.
+- **Integrated point capture:** plus enters point-selection mode, while count, cancel, and done controls finish the session; opening the controller never starts capture by itself.
 - **Visible tap points:** translucent markers show saved positions and pulse at the active point.
 - **Timing controls:** base interval plus an optional random extra delay; minimum interval is 100 ms.
 - **Pause and resume:** preserve the current point, per-point tap progress, and completed rounds.
 - **Saved profiles:** save, update, switch, and delete complete point-and-timing setups.
 - **Per-point controls:** configure delay, consecutive tap count, and press duration for every point.
 - **Point management and migration:** inspect or remove individual points and migrate legacy single-point data.
-- **Large-screen and bilingual UI:** phone and `w600dp` layouts with English and Simplified Chinese.
+- **Large-screen and bilingual UI:** phone and `w600dp` layouts with an in-app English, Simplified Chinese, or Follow System selector.
 - **Theme and language controls:** choose Light, Night, or Follow System, and switch between Simplified Chinese, English, or the system language.
 - **Edge-snapping controller:** drag and release to dock to the nearest edge; the default position is the right edge.
-- **Built-in tutorial:** the top-right help button explains permissions, point capture, playback, deletion, and collapse.
+- **Text-only tutorial:** the top-right help button explains permissions, point capture, playback, deletion, and collapse.
+- **Low-distraction feedback:** normal capture and playback no longer trigger repeated Toast messages; permission, validation, and execution errors still do.
 - **Update alerts:** check the latest release from this repository and ignore a selected version.
 
 ## Compatibility and downloads
@@ -63,9 +65,9 @@ AutoTapper does not read screen text or upload saved points. Coordinates and set
 
 1. Download and install an APK from [Releases](https://github.com/JX-Lab/AutoTapper/releases/latest).
 2. Grant overlay permission and enable the AutoTapper accessibility service; granted rows disappear automatically.
-3. Configure global timing; optionally edit delay, tap count, and press duration for each point.
+3. Configure global timing. Every numeric field explains its valid range and effect; individual points can override delay, tap count, and press duration.
 4. Open the floating controller. It does not start point capture; press the plus icon only when you want to add points.
-5. Use play to start, the same icon to pause or resume, and the square to stop and reset. The trash removes the last point; clear-all requires a second confirmation tap.
+5. Use play to start; the controller collapses automatically so it does not cover the target. Reopen it to pause or resume. The square stops while running and becomes one-tap clear-all after stopping; trash removes the last point.
 
 <p align="center">
   <img src="./assets/readme/workflow.svg" width="100%" alt="AutoTapper workflow: select points, configure timing, start, tap in sequence, and check for updates.">
@@ -79,22 +81,26 @@ With points A, B, and C saved, one round is:
 A → wait → B → wait → C → round complete → A → …
 ```
 
-| Setting | Meaning | Example |
+| Setting | Valid range and effect | Example |
 | --- | --- | --- |
-| Base interval | Minimum milliseconds between taps | `400` |
-| Random extra delay | Adds a random `0..N` milliseconds | `80` |
-| Rounds | One tap at every point; `0` means infinite | `10` |
+| Base interval | At least `100 ms`; lower values tap faster, while `300–800 ms` suits most screens | `400` |
+| Random extra delay | `0` or more; adds a random `0..N ms`, and `0` keeps a fixed rhythm | `80` |
+| Rounds | `0` runs until manually stopped; `1` runs the full sequence once | `10` |
+| Per-point delay | `0` uses the global interval; a positive value overrides it for that point | `0` |
+| Taps per point | `1–9999`; the sequence moves on only after these consecutive taps | `1` |
+| Press duration | `20–10000 ms`; about `40 ms` is a tap and roughly `500+ ms` usually acts as a long press | `40` |
 
 A 400 ms base interval and 80 ms random delay produce a 400–480 ms wait after each tap.
 
 ## Floating controller
 
-- `+`: enter point-selection mode and add multiple points.
-- `DEL`: remove the last point.
-- `GO`: start at the first point.
-- `STOP`: cancel all future taps immediately.
-- Drag the handle to move the controller.
-- Collapse the controller to hide point markers.
+- **Plus:** enter point-selection mode and add multiple points; finish or cancel from the same controller.
+- **Trash:** remove the last point.
+- **Play / pause:** start, pause, or resume the current setup. Starting automatically collapses the controller so it does not cover the target.
+- **Square:** stop while running; after stopping, the same button becomes one-tap clear-all.
+- **Settings:** edit interval, random delay, rounds, press duration, and taps per point from the overlay; values stay synchronized with the main screen.
+- **Chevron / ×:** collapse to the edge handle or close the controller completely.
+- **Drag:** both the controller and handle snap to the nearest screen edge when released.
 
 ## Build from source
 
@@ -123,6 +129,8 @@ app/src/main/
 │   ├── OverlayService.kt     # Floating controller and point picker
 │   ├── MainActivity.kt       # Settings and point management
 │   ├── AutoTapperConfig.kt   # Local storage and migration
+│   ├── ProfileListAdapter.kt # Saved-profile list
+│   ├── TutorialActivity.kt   # In-app text tutorial
 │   └── UpdateChecker.kt      # GitHub Release update checks
 └── res/                      # Layouts, vector assets, theme, and localization
 ```
@@ -155,7 +163,7 @@ Bug reports, documentation improvements, translations, and focused feature pull 
 
 ## Known limitations
 
-- Swipe and complex action sequences are not supported.
+- Swipe and complex action sequences are not supported yet; swipe actions are being designed, while the current release remains tap-and-hold only.
 - Saved coordinates do not adapt automatically to layout changes or screen rotation.
 - Scheduled start is still under discussion; e-commerce server-time synchronization is not implemented.
 
